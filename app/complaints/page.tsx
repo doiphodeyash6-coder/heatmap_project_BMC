@@ -1,161 +1,86 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { getWorkerComplaints, updateComplaint, Complaint } from '@/lib/firebase-service';
+import { useRouter } from 'next/navigation';
+import { getUserComplaints, Complaint } from '@/lib/firebase-service';
 import { Navigation } from '@/components/Navigation';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Card, CardContent } from '@/components/ui/card';
 
-export default function WorkerDashboard() {
+export default function ComplaintsPage() {
 
   const { user, userProfile, loading } = useAuth();
   const router = useRouter();
 
   const [complaints, setComplaints] = useState<(Complaint & { id: string })[]>([]);
-  const [pageLoading, setPageLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(true);
 
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [severityFilter, setSeverityFilter] = useState('all');
-
-  const [error, setError] = useState('');
-
-  // ✅ Protect route
+  // 🔐 PROTECT ROUTE (NO LOOP)
   useEffect(() => {
-    if (!loading && !user) router.push('/auth/login');
-    if (!loading && userProfile?.role !== "worker") router.push('/');
-  }, [user, userProfile, loading, router]);
 
-  // ✅ Load worker complaints
-  useEffect(() => {
-    if (user) {
-      loadComplaints();
+    if (loading) return;
+
+    if (!user) {
+      router.replace('/auth/login');
+      return;
     }
-  }, [user]);
 
-  const loadComplaints = async () => {
-    try {
-      if (!user) return;
+    if (!userProfile) return;
 
-      const data = await getWorkerComplaints(user.uid);
+    // ✅ redirect only if wrong role
+    if (userProfile.role === "worker") {
+      router.replace('/worker');
+      return;
+    }
+
+    if (userProfile.role === "admin") {
+      router.replace('/admin');
+      return;
+    }
+
+  }, [user, userProfile, loading]);
+
+  // 📦 LOAD DATA (ONLY ONCE)
+  useEffect(() => {
+
+    if (!user) return;
+
+    const loadData = async () => {
+      const data = await getUserComplaints(user.uid);
       setComplaints(data);
+      setDataLoading(false);
+    };
 
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load complaints');
-    } finally {
-      setPageLoading(false);
-    }
-  };
+    loadData();
 
-  // ✅ Mark resolved
-  const markResolved = async (id: string) => {
-    await updateComplaint(id, { status: "resolved" });
-    loadComplaints();
-  };
+  }, [user?.uid]); // ✅ IMPORTANT (prevents infinite loop)
 
-  if (loading || pageLoading) {
+  // ⏳ LOADING UI
+  if (loading || dataLoading) {
     return (
       <main className="min-h-screen bg-gray-50">
         <Navigation />
-        <div className="flex items-center justify-center h-[600px]">
-          <p className="text-gray-600">Loading worker dashboard...</p>
+        <div className="flex items-center justify-center h-[500px]">
+          <p className="text-gray-600">Loading complaints...</p>
         </div>
       </main>
     );
   }
-
-  if (!user) return null;
-
-  const severityColors = {
-    low: 'bg-green-100 text-green-800',
-    medium: 'bg-yellow-100 text-yellow-800',
-    high: 'bg-red-100 text-red-800',
-  };
-
-  const statusColors = {
-    open: 'bg-blue-100 text-blue-800',
-    assigned: 'bg-purple-100 text-purple-800',
-    resolved: 'bg-green-100 text-green-800',
-  };
-
-  const filteredComplaints = complaints.filter((c) => {
-
-    const searchMatch =
-      c.title.toLowerCase().includes(search.toLowerCase()) ||
-      c.description.toLowerCase().includes(search.toLowerCase());
-
-    const statusMatch =
-      statusFilter === 'all' || c.status === statusFilter;
-
-    const severityMatch =
-      severityFilter === 'all' || c.severity === severityFilter;
-
-    return searchMatch && statusMatch && severityMatch;
-
-  });
 
   return (
     <main className="min-h-screen bg-gray-50">
 
       <Navigation />
 
-      <div className="max-w-6xl mx-auto px-4 py-8">
+      <div className="max-w-5xl mx-auto p-6">
 
-        {/* ✅ TITLE CHANGE */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold">Worker Dashboard</h1>
-          <p className="text-gray-600">Your assigned complaints</p>
-        </div>
+        <h1 className="text-3xl font-bold mb-6">My Complaints</h1>
 
-        {/* Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-
-          <Input
-            placeholder="Search complaints..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-
-          <select
-            className="border rounded px-3 py-2"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-          >
-            <option value="all">All Status</option>
-            <option value="assigned">Assigned</option>
-            <option value="resolved">Resolved</option>
-          </select>
-
-          <select
-            className="border rounded px-3 py-2"
-            value={severityFilter}
-            onChange={(e) => setSeverityFilter(e.target.value)}
-          >
-            <option value="all">All Severity</option>
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
-          </select>
-
-        </div>
-
-        {/* Error */}
-        {error && (
-          <div className="bg-red-50 text-red-700 p-4 rounded mb-6">
-            {error}
-          </div>
-        )}
-
-        {/* List */}
-        {filteredComplaints.length === 0 ? (
+        {complaints.length === 0 ? (
 
           <Card>
             <CardContent className="p-10 text-center">
-              <p className="text-gray-600">No assigned complaints</p>
+              <p className="text-gray-600">No complaints found</p>
             </CardContent>
           </Card>
 
@@ -163,63 +88,29 @@ export default function WorkerDashboard() {
 
           <div className="space-y-4">
 
-            {filteredComplaints.map((c) => (
+            {complaints.map((c) => (
 
-              <Card key={c.id} className="hover:shadow-md transition">
+              <Card key={c.id}>
+                <CardContent className="p-4">
 
-                <CardHeader>
-                  <div className="flex justify-between items-center">
+                  <h3 className="font-semibold text-lg">
+                    {c.title}
+                  </h3>
 
-                    <CardTitle>{c.title}</CardTitle>
-
-                    <div className="flex gap-2">
-                      <Badge className={severityColors[c.severity]}>
-                        {c.severity}
-                      </Badge>
-
-                      <Badge className={statusColors[c.status]}>
-                        {c.status}
-                      </Badge>
-                    </div>
-
-                  </div>
-                </CardHeader>
-
-                <CardContent>
-
-                  <p className="text-gray-700 mb-3">
+                  <p className="text-gray-600 text-sm mt-1">
                     {c.description}
                   </p>
 
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-500 mt-2">
                     📍 {c.location.address}
                   </p>
 
-                  <div className="mt-4 flex gap-2">
-
-                    <Button
-                      size="sm"
-                      onClick={() => markResolved(c.id)}
-                    >
-                      Mark Resolved
-                    </Button>
-
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() =>
-                        window.open(
-                          `https://maps.google.com/?q=${c.location.latitude},${c.location.longitude}`
-                        )
-                      }
-                    >
-                      View Map
-                    </Button>
-
+                  <div className="mt-2 text-sm">
+                    <span className="mr-3">Status: <b>{c.status}</b></span>
+                    <span>Severity: <b>{c.severity}</b></span>
                   </div>
 
                 </CardContent>
-
               </Card>
 
             ))}

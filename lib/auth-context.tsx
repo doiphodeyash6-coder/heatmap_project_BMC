@@ -16,7 +16,7 @@ import { auth, db } from './firebase';
 export interface UserProfile {
   uid: string;
   email: string;
-role: "user" | "admin" | "worker"
+  role: "citizen" | "admin" | "worker";
   displayName?: string;
   createdAt: number;
 }
@@ -104,7 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const profile: UserProfile = {
       uid: newUser.uid,
       email: newUser.email || email,
-      role: 'citizen', // default role
+      role: 'citizen',
       displayName,
       createdAt: Date.now(),
     };

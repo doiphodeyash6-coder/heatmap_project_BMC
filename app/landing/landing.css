@@ -1,0 +1,312 @@
+/* --- VARIABLES --- */
+:root {
+  --primary: #2ecc71;       /* Fresh Green */
+  --primary-dark: #27ae60;
+  --secondary: #2c3e50;     /* Dark Blue/Grey */
+  --bg-light: #f9fbfd;
+  --text-dark: #333;
+  --text-light: #666;
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  --radius: 12px;
+}
+
+/* --- BASE --- */
+.landing-page {
+  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--text-dark);
+  overflow-x: hidden;
+  margin-top: 60px;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+a { text-decoration: none; }
+
+/* --- [REVERTED] ORIGINAL HERO STYLES --- */
+.hero {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  background-color: #f8fcf8; /* Light background */
+}
+
+.hero-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 1200px;
+  width: 100%;
+  gap: 40px;
+}
+
+.hero-text {
+  flex: 1;
+  max-width: 600px;
+}
+
+.hero-text h1 {
+  font-size: 3rem;
+  line-height: 1.2;
+  color: var(--secondary);
+  margin-bottom: 20px;
+}
+
+.hero-text span {
+  color: var(--primary);
+}
+
+.hero-text p {
+  font-size: 1.2rem;
+  color: var(--text-light);
+  margin-bottom: 30px;
+  line-height: 1.6;
+}
+
+.hero-actions {
+  display: flex;
+  gap: 15px;
+}
+
+.hero-image {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.hero-image img {
+  width: 100%;
+  max-width: 500px;
+  border-radius: 12px;
+}
+
+/* --- NEW: Floating Animation --- */
+.floating-img {
+  animation: float 4s ease-in-out infinite;
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-15px); }
+  100% { transform: translateY(0px); }
+}
+
+/* Buttons for Hero */
+.primary-btn {
+  background-color: var(--primary);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-weight: bold;
+  transition: 0.3s;
+}
+
+.primary-btn:hover {
+  background-color: var(--primary-dark);
+}
+
+.secondary-btn {
+  background-color: transparent;
+  color: var(--secondary);
+  border: 2px solid var(--secondary);
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-weight: bold;
+  transition: 0.3s;
+}
+
+.secondary-btn:hover {
+  background-color: var(--secondary);
+  color: white;
+}
+
+/* --- [REVERTED] ORIGINAL PROBLEM STYLES --- */
+.problem {
+  background-color: white;
+  text-align: center;
+  padding: 60px 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.problem h2 {
+  font-size: 2.5rem;
+  color: var(--secondary);
+  margin-bottom: 20px;
+}
+
+.problem p {
+  font-size: 1.2rem;
+  color: var(--text-light);
+  max-width: 800px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+/* --- ORIGINAL HOW IT WORKS STYLES --- */
+.how-it-works {
+  padding: 60px 0;
+  text-align: center;
+  background-color: #fff;
+}
+
+.how-it-works h2 {
+  font-size: 2.5rem;
+  color: var(--secondary);
+  margin-bottom: 40px;
+}
+
+.steps {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  flex-wrap: wrap;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.step-card {
+  flex: 1;
+  min-width: 250px;
+  max-width: 350px;
+  text-align: center;
+  padding: 20px;
+}
+
+.step-card img {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.step-card h3 {
+  color: var(--secondary);
+  margin-bottom: 10px;
+  font-size: 1.4rem;
+}
+
+.step-card p {
+  color: var(--text-light);
+  line-height: 1.5;
+}
+
+/* --- [KEPT NEW] AUDIENCE SECTION --- */
+.audience-section { padding: 80px 0; background-color: var(--bg-light); }
+.audience-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 50px;
+  align-items: center;
+}
+
+.audience-text h2 { font-size: 2.5rem; margin-bottom: 10px; color: var(--secondary); }
+.benefit-item { display: flex; gap: 20px; margin-top: 30px; }
+.benefit-item .icon {
+  font-size: 2rem;
+  background: #e8f5e9;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+.benefit-item h4 { font-size: 1.2rem; margin-bottom: 5px; color: var(--secondary); }
+.benefit-item p { color: var(--text-light); margin: 0; }
+
+.visual-box {
+  background: var(--secondary);
+  color: white;
+  padding: 60px;
+  border-radius: 20px;
+  text-align: center;
+  position: relative;
+  /* Fallback image if asset is missing, ensures design holds */
+  background: linear-gradient(rgba(44, 62, 80, 0.9), rgba(44, 62, 80, 0.9)); 
+}
+
+/* --- [KEPT NEW] IMPACT SECTION --- */
+.impact-section { padding: 80px 0; background: white; text-align: center; }
+.impact-section h2 { margin-bottom: 40px; color: var(--secondary); font-size: 2.5rem; }
+
+.impact-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.impact-card {
+  position: relative;
+  height: 250px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.impact-card .bg-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s;
+}
+
+.impact-card:hover .bg-img { transform: scale(1.1); }
+
+.impact-card .overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  padding: 20px;
+}
+
+.impact-card h3 { font-size: 2.5rem; margin: 0; color: var(--primary); }
+.impact-card h4 { font-size: 1.2rem; margin: 5px 0; }
+
+/* --- [KEPT NEW] CTA SECTION --- */
+.cta-section {
+  padding: 100px 0;
+  text-align: center;
+  background: var(--bg-light);
+}
+.cta-section h2 { font-size: 3rem; margin-bottom: 10px; color: var(--secondary); }
+.cta-section p { font-size: 1.3rem; margin-bottom: 30px; color: var(--text-light); }
+
+/* --- BUTTONS FOR NEW SECTIONS --- */
+.btn {
+  display: inline-block;
+  padding: 12px 28px;
+  border-radius: 50px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: white;
+  box-shadow: 0 4px 15px rgba(46, 204, 113, 0.4);
+}
+
+.btn-large {
+  padding: 16px 40px;
+  font-size: 1.1rem;
+}
+
+/* --- RESPONSIVE --- */
+@media (max-width: 768px) {
+  .hero-content { flex-direction: column; text-align: center; }
+  .hero-actions { justify-content: center; }
+  .audience-grid { grid-template-columns: 1fr; }
+  .benefit-item { flex-direction: column; align-items: center; text-align: center; }
+}

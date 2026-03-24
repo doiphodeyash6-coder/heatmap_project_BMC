@@ -1,129 +1,141 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/lib/auth-context';
-import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Navigation } from '@/components/Navigation';
+import { Button } from '@/components/ui/button';
 
 export default function Home() {
 
-  // ✅ ADD userProfile
-  const { user, userProfile, loading } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-
-    if (!loading && !user) {
-      router.push('/auth/login');
-      return;
-    }
-
-    // ✅ NEW ROLE-BASED REDIRECT
-    if (!loading && userProfile) {
-
-      if (userProfile.role === "admin") {
-        router.replace('/admin');
-
-      } else if (userProfile.role === "worker") {
-        router.replace('/worker');   // 🔥 MAIN FIX
-
-      } else {
-        router.replace('/complaints');
-      }
-    }
-
-  }, [user, userProfile, loading, router]);
-
-  if (loading || !userProfile) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-green-50">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // ❌ THIS PAGE SHOULD NOT RENDER FOR WORKER / ADMIN
-  if (userProfile.role === "worker" || userProfile.role === "admin") {
-    return null;
-  }
-
   return (
-    <main className="min-h-screen bg-gradient-to-b from-white to-gray-50">
-      <Navigation />
-      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
-        
-        {/* Hero Section */}
-        <div className="text-center mb-16">
-          <div className="inline-block mb-6">
-            <span className="px-4 py-2 bg-sky-50 text-sky-700 rounded-full text-sm font-semibold">
-              Smart Waste Management
-            </span>
-          </div>
+    <main
+      className="min-h-screen bg-cover bg-center"
+      style={{ backgroundImage: "url('/bg.png')" }}   // ✅ KEEP OLD BG
+    >
 
-          <h1 className="text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-            Track Waste Issues<br />
-            <span className="bg-gradient-to-r from-sky-600 to-emerald-600 bg-clip-text text-transparent">
+      {/* 🔥 OVERLAY */}
+      <div className="bg-black/60 min-h-screen">
+
+        <Navigation />
+
+        {/* HERO */}
+        <section className="text-center py-32 px-6 max-w-5xl mx-auto text-white">
+
+          <span className="px-4 py-2 bg-white/20 backdrop-blur-md rounded-full text-sm font-semibold">
+            Smart Waste Management
+          </span>
+
+          <h1 className="text-5xl md:text-6xl font-bold mt-6 mb-6 leading-tight">
+            Track Waste Issues
+            <br />
+            <span className="bg-gradient-to-r from-sky-400 to-emerald-400 bg-clip-text text-transparent">
               in Your Community
             </span>
           </h1>
 
-          <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            Report waste collection problems and help authorities resolve issues faster
+          <p className="text-gray-200 text-lg max-w-2xl mx-auto mb-8">
+            Report waste problems, track complaints, and help authorities keep your city clean and efficient.
           </p>
-        </div>
 
-        {/* Feature Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16">
+          <Link href="/auth/login">
+            <Button className="bg-gradient-to-r from-sky-500 to-emerald-500 hover:opacity-90 text-lg px-8 py-4 rounded-xl shadow-lg">
+              Get Started 🚀
+            </Button>
+          </Link>
 
-          <div className="group bg-white rounded-xl border border-gray-200 p-8 hover:border-sky-300 hover:shadow-lg transition-all duration-300">
-            <div className="w-14 h-14 bg-gradient-to-br from-sky-100 to-sky-50 rounded-lg flex items-center justify-center mb-6 group-hover:from-sky-200 transition-colors">
-              <svg className="w-7 h-7 text-sky-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
+        </section>
+
+        {/* FEATURE CARDS */}
+        <section className="max-w-6xl mx-auto px-6 pb-32 grid md:grid-cols-2 gap-12">
+
+          {/* REPORT */}
+          <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-8 shadow-lg hover:scale-105 hover:shadow-2xl transition duration-300 text-white">
+
+            <div className="w-14 h-14 bg-sky-500/20 rounded-xl flex items-center justify-center mb-6">
+              <span className="text-2xl">📍</span>
             </div>
 
-            <h2 className="text-xl font-bold text-gray-900 mb-3">Report Issue</h2>
+            <h2 className="text-xl font-bold mb-2">
+              Report Issue
+            </h2>
 
-            <p className="text-gray-600 mb-6">
-              Submit a complaint with location details and photos to document waste collection problems
+            <p className="text-gray-200 mb-6">
+              Quickly report waste problems with location, images, and details for faster action.
             </p>
 
-            <Link href="/complaints/new">
-              <Button className="w-full bg-sky-600 hover:bg-sky-700">
+            <Link href="/auth/login">
+              <Button className="w-full bg-sky-600 hover:bg-sky-700 rounded-lg">
                 Report Now
               </Button>
             </Link>
+
           </div>
 
-          <div className="group bg-white rounded-xl border border-gray-200 p-8 hover:border-cyan-300 hover:shadow-lg transition-all duration-300">
-            <div className="w-14 h-14 bg-gradient-to-br from-cyan-100 to-cyan-50 rounded-lg flex items-center justify-center mb-6 group-hover:from-cyan-200 transition-colors">
-              <svg className="w-7 h-7 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
+          {/* TRACK */}
+          <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-8 shadow-lg hover:scale-105 hover:shadow-2xl transition duration-300 text-white">
+
+            <div className="w-14 h-14 bg-emerald-500/20 rounded-xl flex items-center justify-center mb-6">
+              <span className="text-2xl">📊</span>
             </div>
 
-            <h2 className="text-xl font-bold text-gray-900 mb-3">My Complaints</h2>
+            <h2 className="text-xl font-bold mb-2">
+              Track Complaints
+            </h2>
 
-            <p className="text-gray-600 mb-6">
-              Track the status of your submissions and receive updates when issues are resolved
+            <p className="text-gray-200 mb-6">
+              Monitor complaint status in real-time and stay updated on resolution progress.
             </p>
 
-            <Link href="/complaints">
-              <Button variant="outline" className="w-full border-cyan-200 text-cyan-700 hover:bg-cyan-50">
-                View Reports
+            <Link href="/auth/login">
+              <Button variant="outline" className="w-full rounded-lg border-white text-white hover:bg-white hover:text-black">
+                View Status
               </Button>
             </Link>
+
+          </div>
+
+        </section>
+
+      </div>
+
+      {/* ✅ HOW IT WORKS (NEW IMAGE hit.png) */}
+      <section
+        className="relative py-24 bg-cover bg-center"
+        style={{ backgroundImage: "url('/hit.png')" }}   // ✅ NEW BG HERE
+      >
+
+        {/* overlay */}
+        <div className="absolute inset-0 bg-black/70"></div>
+
+        {/* content */}
+        <div className="relative z-10">
+
+          <h2 className="text-3xl font-bold text-center mb-12 text-white">
+            How It Works
+          </h2>
+
+          <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-10 px-6">
+
+            <div className="bg-white/10 backdrop-blur-lg border border-white/20 p-6 rounded-xl text-center shadow-lg text-white">
+              <h3 className="font-bold text-lg mb-2">📍 Report</h3>
+              <p className="text-gray-200">Citizen reports waste issue</p>
+            </div>
+
+            <div className="bg-white/10 backdrop-blur-lg border border-white/20 p-6 rounded-xl text-center shadow-lg text-white">
+              <h3 className="font-bold text-lg mb-2">🛠 Assign</h3>
+              <p className="text-gray-200">Admin assigns worker</p>
+            </div>
+
+            <div className="bg-white/10 backdrop-blur-lg border border-white/20 p-6 rounded-xl text-center shadow-lg text-white">
+              <h3 className="font-bold text-lg mb-2">✅ Resolve</h3>
+              <p className="text-gray-200">Worker resolves issue</p>
+            </div>
+
           </div>
 
         </div>
 
-      </div>
+      </section>
+
     </main>
   );
 }

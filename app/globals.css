@@ -4,13 +4,13 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: #ffffff;
+  --background: #c47c75;
   --foreground: #1f2937;
-  --card: #ffffff;
-  --card-foreground: #1f2937;
+  --card: #8bc7da;
+  --card-foreground: #6ea546;
   --popover: #ffffff;
   --popover-foreground: #1f2937;
-  --primary: #0ea5e9;
+  --primary: #216a8b;
   --primary-foreground: #ffffff;
   --secondary: #10b981;
   --secondary-foreground: #ffffff;

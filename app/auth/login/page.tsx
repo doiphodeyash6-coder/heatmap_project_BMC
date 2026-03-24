@@ -49,17 +49,14 @@ export default function LoginPage() {
 
       const user = result.user;
 
-      // allow only Gmail
       if (!user.email || !user.email.endsWith("@gmail.com")) {
         alert("Only Gmail accounts allowed");
         return;
       }
 
       const userRef = doc(db, "users", user.uid);
-
       const userSnap = await getDoc(userRef);
 
-      // if user does not exist → create account
       if (!userSnap.exists()) {
 
         await setDoc(userRef, {
@@ -72,30 +69,29 @@ export default function LoginPage() {
 
       }
 
-      console.log("Google login success:", user.email);
-
     } catch (error) {
       console.log(error);
     }
 
   };
 
-  // Role redirect
+  // ✅ FIXED ROLE REDIRECT
   useEffect(() => {
 
-  
+    if (!userProfile) return;
 
-  if (!userProfile) return;
+    if (userProfile.role === "admin") {
+      router.replace("/admin");
 
-  if (userProfile.role === "admin") {
-    router.push("/admin");
-  } else if (userProfile.role === "worker") {
-    router.push("/worker");
-  } else {
-    router.push("/complaints");
-  }
+    } else if (userProfile.role === "worker") {
+      router.replace("/worker");
 
-}, [userProfile, router]);
+    } else {
+  router.replace("/complaints"); // ✅ citizen dashboard
+}
+
+  }, [userProfile, router]);
+
   return (
 
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-50 via-white to-emerald-50 p-4">
@@ -121,7 +117,6 @@ export default function LoginPage() {
 
         <CardContent>
 
-          {/* Email login */}
           <form onSubmit={handleSubmit} className="space-y-4">
 
             {error && (
@@ -164,7 +159,6 @@ export default function LoginPage() {
             OR
           </div>
 
-          {/* Google login */}
           <Button
             onClick={loginWithGoogle}
             variant="outline"
