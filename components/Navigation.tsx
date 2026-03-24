@@ -28,28 +28,23 @@ export function Navigation() {
 
         <div className="flex items-center justify-between h-16">
 
-          {/* 🔥 LOGO + NAME */}
+          {/* LOGO */}
           <Link href="/" className="flex items-center gap-3">
-
-            {/* Logo Image */}
             <img
               src="/logo.png"
               alt="logo"
               className="w-9 h-9 rounded-lg object-cover"
             />
-
-            {/* Brand Name */}
             <span className="text-xl font-bold text-white">
               WasteTrack
             </span>
-
           </Link>
 
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center gap-8">
 
-            {/* Citizen */}
-            {!isAdmin && !isWorker && (
+            {/* Show only if logged in */}
+            {user && !isAdmin && !isWorker && (
               <>
                 <Link href="/complaints/new" className="text-gray-300 hover:text-white transition">
                   Report Issue
@@ -61,15 +56,13 @@ export function Navigation() {
               </>
             )}
 
-            {/* Admin */}
-            {isAdmin && (
+            {user && isAdmin && (
               <Link href="/admin" className="text-amber-400 font-medium">
                 Admin Dashboard
               </Link>
             )}
 
-            {/* Worker */}
-            {isWorker && (
+            {user && isWorker && (
               <span className="text-sky-400 font-medium">
                 Worker Dashboard
               </span>
@@ -80,17 +73,29 @@ export function Navigation() {
           {/* User Section */}
           <div className="hidden md:flex items-center gap-4">
 
-            <span className="text-sm text-gray-300">
-              {user?.email}
-            </span>
+            {!user ? (
+              // 🔥 NOT LOGGED IN
+              <Link href="/auth/login">
+                <Button className="bg-sky-600 hover:bg-sky-700">
+                  Login
+                </Button>
+              </Link>
+            ) : (
+              // 🔥 LOGGED IN
+              <>
+                <span className="text-sm text-gray-300">
+                  {user.email}
+                </span>
 
-            <Button
-              onClick={handleLogout}
-              variant="outline"
-              className="border-white/20 text-white hover:bg-white hover:text-black"
-            >
-              Logout
-            </Button>
+                <Button
+                  onClick={handleLogout}
+                  variant="outline"
+                  className="border-white/20 text-white hover:bg-white hover:text-black"
+                >
+                  Logout
+                </Button>
+              </>
+            )}
 
           </div>
 
@@ -108,7 +113,7 @@ export function Navigation() {
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-white/10 py-4 space-y-3 text-white">
 
-            {!isAdmin && !isWorker && (
+            {user && !isAdmin && !isWorker && (
               <>
                 <Link href="/complaints/new" className="block px-4 py-2">
                   Report Issue
@@ -120,22 +125,33 @@ export function Navigation() {
               </>
             )}
 
-            {isAdmin && (
+            {user && isAdmin && (
               <Link href="/admin" className="block px-4 py-2">
                 Admin Dashboard
               </Link>
             )}
 
+            {/* User Section Mobile */}
             <div className="border-t border-white/10 pt-4 px-4">
 
-              <p className="text-sm mb-3">{user?.email}</p>
+              {!user ? (
+                <Link href="/auth/login">
+                  <Button className="w-full bg-sky-600">
+                    Login
+                  </Button>
+                </Link>
+              ) : (
+                <>
+                  <p className="text-sm mb-3">{user.email}</p>
 
-              <Button
-                onClick={handleLogout}
-                className="w-full bg-white text-black"
-              >
-                Logout
-              </Button>
+                  <Button
+                    onClick={handleLogout}
+                    className="w-full bg-white text-black"
+                  >
+                    Logout
+                  </Button>
+                </>
+              )}
 
             </div>
 
