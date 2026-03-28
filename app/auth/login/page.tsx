@@ -1,186 +1,106 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useAuth } from '@/lib/auth-context';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-
-import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
-import { auth } from "@/lib/firebase";
-
-import { doc, getDoc, setDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 
 export default function LoginPage() {
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-
-  const { login, userProfile } = useAuth();
+  const { login } = useAuth();
   const router = useRouter();
 
-  // Email login
-  const handleSubmit = async (e: React.FormEvent) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleLogin = async (e: any) => {
     e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    try {
-      await login(email, password);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
-      setLoading(false);
-    }
+    await login(email, password);
+    router.push('/');
   };
-
-  // Google login + register
-  const loginWithGoogle = async () => {
-
-    try {
-
-      const provider = new GoogleAuthProvider();
-
-      const result = await signInWithPopup(auth, provider);
-
-      const user = result.user;
-
-      if (!user.email || !user.email.endsWith("@gmail.com")) {
-        alert("Only Gmail accounts allowed");
-        return;
-      }
-
-      const userRef = doc(db, "users", user.uid);
-      const userSnap = await getDoc(userRef);
-
-      if (!userSnap.exists()) {
-
-        await setDoc(userRef, {
-          uid: user.uid,
-          email: user.email,
-          displayName: user.displayName,
-          role: "citizen",
-          createdAt: Date.now()
-        });
-
-      }
-
-    } catch (error) {
-      console.log(error);
-    }
-
-  };
-
-  // ✅ FIXED ROLE REDIRECT
-  useEffect(() => {
-
-    if (!userProfile) return;
-
-    if (userProfile.role === "admin") {
-      router.replace("/admin");
-
-    } else if (userProfile.role === "worker") {
-      router.replace("/worker");
-
-    } else {
-  router.replace("/complaints"); // ✅ citizen dashboard
-}
-
-  }, [userProfile, router]);
 
   return (
+    <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
 
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-50 via-white to-emerald-50 p-4">
+      {/* 🎥 VIDEO BACKGROUND */}
+      <video
+        autoPlay
+        loop
+        muted
+        className="absolute w-full h-full object-cover"
+      >
+        <source src="/login-bg.mp4" type="video/mp4" />
+      </video>
 
-      <Card className="w-full max-w-md shadow-xl border-gray-200">
+      {/* DARK OVERLAY */}
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
 
-        <CardHeader className="space-y-2">
+      {/* LOGIN CARD */}
+      <div className="relative z-10 w-full max-w-md p-8 rounded-2xl 
+      bg-white/10 backdrop-blur-xl border border-white/20 
+      shadow-2xl text-white animate-fadeIn">
 
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-8 h-8 bg-gradient-to-br from-sky-400 to-emerald-400 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold">W</span>
-            </div>
-
-            <span className="text-xl font-bold bg-gradient-to-r from-sky-600 to-emerald-600 bg-clip-text text-transparent">
-              WasteTrack
-            </span>
+        {/* LOGO */}
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-gradient-to-br from-sky-500 to-emerald-500 rounded-lg flex items-center justify-center font-bold">
+            W
           </div>
+          <h1 className="text-xl font-bold">WasteTrack</h1>
+        </div>
 
-          <CardTitle className="text-2xl">Welcome Back</CardTitle>
-          <CardDescription>Sign in to continue</CardDescription>
+        {/* TITLE */}
+        <h2 className="text-2xl font-bold mb-2">Welcome Back 👋</h2>
+        <p className="text-gray-300 mb-6">Sign in to continue</p>
 
-        </CardHeader>
+        {/* FORM */}
+        <form onSubmit={handleLogin} className="space-y-4">
 
-        <CardContent>
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full p-3 rounded-lg bg-white/10 border border-white/20 
+            focus:outline-none focus:ring-2 focus:ring-sky-500 transition"
+          />
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full p-3 rounded-lg bg-white/10 border border-white/20 
+            focus:outline-none focus:ring-2 focus:ring-emerald-500 transition"
+          />
 
-            {error && (
-              <div className="p-3 bg-red-50 text-red-700 rounded-md text-sm border border-red-200">
-                {error}
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Email</label>
-              <Input
-                type="email"
-                placeholder="your@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                disabled={loading}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Password</label>
-              <Input
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                disabled={loading}
-              />
-            </div>
-
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Signing in...' : 'Sign In'}
-            </Button>
-
-          </form>
-
-          <div className="my-4 text-center text-gray-400 text-sm">
-            OR
-          </div>
-
-          <Button
-            onClick={loginWithGoogle}
-            variant="outline"
-            className="w-full"
+          {/* LOGIN BUTTON */}
+          <button
+            type="submit"
+            className="w-full py-3 rounded-lg bg-gradient-to-r from-sky-500 to-emerald-500 
+            hover:scale-105 transition shadow-lg font-semibold"
           >
-            Sign in with Google
-          </Button>
+            Sign In 🚀
+          </button>
 
-          <div className="mt-6 text-center text-sm">
-            Don’t have an account?{' '}
-            <Link
-              href="/auth/register"
-              className="text-blue-600 hover:underline font-medium"
-            >
-              Register here
-            </Link>
-          </div>
+        </form>
 
-        </CardContent>
+        {/* DIVIDER */}
+        <div className="text-center my-4 text-gray-400">OR</div>
 
-      </Card>
+        {/* GOOGLE BUTTON */}
+        <button className="w-full py-3 rounded-lg bg-white text-black hover:scale-105 transition">
+          Sign in with Google
+        </button>
 
+        {/* REGISTER */}
+        <p className="text-center mt-4 text-gray-300">
+          Don’t have an account?{' '}
+          <Link href="/auth/signup" className="text-sky-400 hover:underline">
+            Register
+          </Link>
+        </p>
+
+      </div>
     </div>
   );
 }

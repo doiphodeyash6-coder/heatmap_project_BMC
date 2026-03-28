@@ -3,17 +3,30 @@
 import Link from 'next/link';
 import { Navigation } from '@/components/Navigation';
 import { Button } from '@/components/ui/button';
+import UltraCard from '@/components/UltraCard';
+import Spotlight from '@/components/Spotlight';
+import Particles from '@/components/Particles';
 
 export default function Home() {
 
   return (
-    <main
-      className="min-h-screen bg-cover bg-center"
-      style={{ backgroundImage: "url('/bg.png')" }}   // ✅ KEEP OLD BG
-    >
+    <main className="relative min-h-screen overflow-hidden">
 
-      {/* 🔥 OVERLAY */}
-      <div className="bg-black/60 min-h-screen">
+      {/* 🌌 BACKGROUND IMAGE */}
+      <div
+        className="absolute inset-0 bg-cover bg-center"
+        style={{ backgroundImage: "url('/bg.png')" }}
+      />
+
+      {/* 🌑 DARK OVERLAY */}
+      <div className="absolute inset-0 bg-black/60" />
+
+      {/* ✨ GOD EFFECTS */}
+      <Spotlight />
+      <Particles />
+
+      {/* 🔥 MAIN CONTENT */}
+      <div className="relative z-10 animate-fadeIn">
 
         <Navigation />
 
@@ -36,106 +49,108 @@ export default function Home() {
             Report waste problems, track complaints, and help authorities keep your city clean and efficient.
           </p>
 
-          <Link href="/auth/login">
-            <Button className="bg-gradient-to-r from-sky-500 to-emerald-500 hover:opacity-90 text-lg px-8 py-4 rounded-xl shadow-lg">
-              Get Started 🚀
-            </Button>
-          </Link>
+       <Link href="/auth/login">
+  <Button className="relative overflow-hidden px-10 py-4 text-lg font-semibold rounded-xl 
+  bg-gradient-to-r from-sky-500 to-emerald-500 text-white 
+  shadow-lg transition-all duration-300 
+  hover:scale-110 hover:shadow-2xl">
 
+    {/* ✨ shine effect */}
+    <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent 
+    opacity-0 hover:opacity-100 transition duration-700 animate-shine"></span>
+
+    {/* 🔥 content */}
+    <span className="relative z-10 flex items-center gap-2">
+      Get Started 🚀
+    </span>
+
+  </Button>
+</Link>
         </section>
 
         {/* FEATURE CARDS */}
         <section className="max-w-6xl mx-auto px-6 pb-32 grid md:grid-cols-2 gap-12">
 
           {/* REPORT */}
-          <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-8 shadow-lg hover:scale-105 hover:shadow-2xl transition duration-300 text-white">
+          <UltraCard bg="/report.jpg">
 
-            <div className="w-14 h-14 bg-sky-500/20 rounded-xl flex items-center justify-center mb-6">
-              <span className="text-2xl">📍</span>
-            </div>
+            
 
-            <h2 className="text-xl font-bold mb-2">
+            <h2 className="text-2xl font-bold mb-3">
               Report Issue
             </h2>
 
-            <p className="text-gray-200 mb-6">
-              Quickly report waste problems with location, images, and details for faster action.
+            <p className="text-gray-200 mb-8">
+              Report waste issues with location and images.
             </p>
 
             <Link href="/auth/login">
-              <Button className="w-full bg-sky-600 hover:bg-sky-700 rounded-lg">
+              <Button className="w-full bg-sky-600 hover:bg-sky-700 rounded-xl py-5 text-lg">
                 Report Now
               </Button>
             </Link>
 
-          </div>
+          </UltraCard>
 
           {/* TRACK */}
-          <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-8 shadow-lg hover:scale-105 hover:shadow-2xl transition duration-300 text-white">
+          <UltraCard bg="/track.jpg">
 
-            <div className="w-14 h-14 bg-emerald-500/20 rounded-xl flex items-center justify-center mb-6">
-              <span className="text-2xl">📊</span>
-            </div>
-
-            <h2 className="text-xl font-bold mb-2">
+            <h2 className="text-2xl font-bold mb-3">
               Track Complaints
             </h2>
 
-            <p className="text-gray-200 mb-6">
-              Monitor complaint status in real-time and stay updated on resolution progress.
+            <p className="text-gray-200 mb-8">
+              Monitor complaints in real-time.
             </p>
 
             <Link href="/auth/login">
-              <Button variant="outline" className="w-full rounded-lg border-white text-white hover:bg-white hover:text-black">
+              <Button className="w-full bg-emerald-600 hover:bg-emerald-700 rounded-xl py-5 text-lg">
                 View Status
               </Button>
             </Link>
+
+          </UltraCard>
+
+        </section>
+
+        {/* HOW IT WORKS */}
+        <section
+          className="relative py-24 bg-cover bg-center"
+          style={{ backgroundImage: "url('/hit.png')" }}
+        >
+
+          <div className="absolute inset-0 bg-black/70" />
+
+          <div className="relative z-10">
+
+            <h2 className="text-3xl font-bold text-center mb-12 text-white">
+              How It Works
+            </h2>
+
+            <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-10 px-6">
+
+              <div className="bg-white/10 backdrop-blur-lg border border-white/20 p-6 rounded-xl text-center text-white hover:scale-105 transition">
+                <h3 className="font-bold text-lg mb-2"> Report</h3>
+                <p>Citizen reports waste issue</p>
+              </div>
+
+              <div className="bg-white/10 backdrop-blur-lg border border-white/20 p-6 rounded-xl text-center text-white hover:scale-105 transition">
+                <h3 className="font-bold text-lg mb-2"> Assign</h3>
+                <p>Admin assigns worker</p>
+              </div>
+
+              <div className="bg-white/10 backdrop-blur-lg border border-white/20 p-6 rounded-xl text-center text-white hover:scale-105 transition">
+                <h3 className="font-bold text-lg mb-2"> Resolve</h3>
+                <p>Worker resolves issue</p>
+              </div>
+
+            </div>
 
           </div>
 
         </section>
 
       </div>
-
-      {/* ✅ HOW IT WORKS (NEW IMAGE hit.png) */}
-      <section
-        className="relative py-24 bg-cover bg-center"
-        style={{ backgroundImage: "url('/hit.png')" }}   // ✅ NEW BG HERE
-      >
-
-        {/* overlay */}
-        <div className="absolute inset-0 bg-black/70"></div>
-
-        {/* content */}
-        <div className="relative z-10">
-
-          <h2 className="text-3xl font-bold text-center mb-12 text-white">
-            How It Works
-          </h2>
-
-          <div className="max-w-6xl mx-auto grid md:grid-cols-3 gap-10 px-6">
-
-            <div className="bg-white/10 backdrop-blur-lg border border-white/20 p-6 rounded-xl text-center shadow-lg text-white">
-              <h3 className="font-bold text-lg mb-2">📍 Report</h3>
-              <p className="text-gray-200">Citizen reports waste issue</p>
-            </div>
-
-            <div className="bg-white/10 backdrop-blur-lg border border-white/20 p-6 rounded-xl text-center shadow-lg text-white">
-              <h3 className="font-bold text-lg mb-2">🛠 Assign</h3>
-              <p className="text-gray-200">Admin assigns worker</p>
-            </div>
-
-            <div className="bg-white/10 backdrop-blur-lg border border-white/20 p-6 rounded-xl text-center shadow-lg text-white">
-              <h3 className="font-bold text-lg mb-2">✅ Resolve</h3>
-              <p className="text-gray-200">Worker resolves issue</p>
-            </div>
-
-          </div>
-
-        </div>
-
-      </section>
-
     </main>
   );
 }
