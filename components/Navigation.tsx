@@ -43,7 +43,7 @@ export function Navigation() {
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center gap-8">
 
-            {/* Show only if logged in */}
+            {/* Citizen */}
             {user && !isAdmin && !isWorker && (
               <>
                 <Link href="/complaints/new" className="text-gray-300 hover:text-white transition">
@@ -56,16 +56,20 @@ export function Navigation() {
               </>
             )}
 
+            {/* Admin */}
             {user && isAdmin && (
               <Link href="/admin" className="text-amber-400 font-medium">
                 Admin Dashboard
               </Link>
             )}
 
+            {/* Worker */}
             {user && isWorker && (
-              <span className="text-sky-400 font-medium">
-                Worker Dashboard
-              </span>
+              <Link href="/worker">
+                <span className="px-3 py-1 rounded-full bg-sky-500/20 text-sky-400 border border-sky-400/30 hover:bg-sky-500/30 transition">
+                  Worker Dashboard
+                </span>
+              </Link>
             )}
 
           </div>
@@ -74,14 +78,12 @@ export function Navigation() {
           <div className="hidden md:flex items-center gap-4">
 
             {!user ? (
-              // 🔥 NOT LOGGED IN
               <Link href="/auth/login">
                 <Button className="bg-sky-600 hover:bg-sky-700">
                   Login
                 </Button>
               </Link>
             ) : (
-              // 🔥 LOGGED IN
               <>
                 <span className="text-sm text-gray-300">
                   {user.email}
@@ -113,6 +115,7 @@ export function Navigation() {
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-white/10 py-4 space-y-3 text-white">
 
+            {/* Citizen */}
             {user && !isAdmin && !isWorker && (
               <>
                 <Link href="/complaints/new" className="block px-4 py-2">
@@ -125,13 +128,21 @@ export function Navigation() {
               </>
             )}
 
+            {/* Admin */}
             {user && isAdmin && (
               <Link href="/admin" className="block px-4 py-2">
                 Admin Dashboard
               </Link>
             )}
 
-            {/* User Section Mobile */}
+            {/* Worker */}
+            {user && isWorker && (
+              <Link href="/worker" className="block px-4 py-2">
+                Worker Dashboard
+              </Link>
+            )}
+
+            {/* User Section */}
             <div className="border-t border-white/10 pt-4 px-4">
 
               {!user ? (

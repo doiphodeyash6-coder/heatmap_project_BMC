@@ -1,5 +1,9 @@
 'use client';
 
+import { useEffect } from 'react'; // ✅ ADDED
+import { useRouter } from 'next/navigation'; // ✅ ADDED
+import { useAuth } from '@/lib/auth-context'; // ✅ ADDED
+
 import Link from 'next/link';
 import { Navigation } from '@/components/Navigation';
 import { Button } from '@/components/ui/button';
@@ -8,6 +12,28 @@ import Spotlight from '@/components/Spotlight';
 import Particles from '@/components/Particles';
 
 export default function Home() {
+
+  const { user, userProfile, loading } = useAuth(); // ✅ ADDED
+  const router = useRouter(); // ✅ ADDED
+
+  // 🔥 ROLE BASED REDIRECT (MAIN FIX)
+  useEffect(() => {
+
+    if (loading) return;
+
+    if (user && userProfile) {
+
+      if (userProfile.role === 'admin') {
+        router.replace('/admin');
+      } 
+      else if (userProfile.role === 'worker') {
+        router.replace('/worker');
+      }
+
+      // citizen stays here
+    }
+
+  }, [user, userProfile, loading, router]);
 
   return (
     <main className="relative min-h-screen overflow-hidden">
@@ -49,32 +75,28 @@ export default function Home() {
             Report waste problems, track complaints, and help authorities keep your city clean and efficient.
           </p>
 
-       <Link href="/auth/login">
-  <Button className="relative overflow-hidden px-10 py-4 text-lg font-semibold rounded-xl 
-  bg-gradient-to-r from-sky-500 to-emerald-500 text-white 
-  shadow-lg transition-all duration-300 
-  hover:scale-110 hover:shadow-2xl">
+          <Link href="/auth/login">
+            <Button className="relative overflow-hidden px-10 py-4 text-lg font-semibold rounded-xl 
+            bg-gradient-to-r from-sky-500 to-emerald-500 text-white 
+            shadow-lg transition-all duration-300 
+            hover:scale-110 hover:shadow-2xl">
 
-    {/* ✨ shine effect */}
-    <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent 
-    opacity-0 hover:opacity-100 transition duration-700 animate-shine"></span>
+              <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent 
+              opacity-0 hover:opacity-100 transition duration-700 animate-shine"></span>
 
-    {/* 🔥 content */}
-    <span className="relative z-10 flex items-center gap-2">
-      Get Started 🚀
-    </span>
+              <span className="relative z-10 flex items-center gap-2">
+                Get Started 🚀
+              </span>
 
-  </Button>
-</Link>
+            </Button>
+          </Link>
+
         </section>
 
         {/* FEATURE CARDS */}
         <section className="max-w-6xl mx-auto px-6 pb-32 grid md:grid-cols-2 gap-12">
 
-          {/* REPORT */}
           <UltraCard bg="/report.jpg">
-
-            
 
             <h2 className="text-2xl font-bold mb-3">
               Report Issue
@@ -92,7 +114,6 @@ export default function Home() {
 
           </UltraCard>
 
-          {/* TRACK */}
           <UltraCard bg="/track.jpg">
 
             <h2 className="text-2xl font-bold mb-3">

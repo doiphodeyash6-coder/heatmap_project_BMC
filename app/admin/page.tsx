@@ -5,8 +5,6 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { getAllComplaints, updateComplaint, Complaint } from '@/lib/firebase-service';
 import { Navigation } from '@/components/Navigation';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import AdminCharts from '@/components/admin/AdminCharts';
@@ -22,22 +20,15 @@ export default function AdminDashboard() {
 
   const [complaints, setComplaints] = useState<(Complaint & { id: string })[]>([]);
   const [pageLoading, setPageLoading] = useState(true);
-
   const [workers, setWorkers] = useState<any[]>([]);
 
   const [activeTab, setActiveTab] = useState<'overview' | 'complaints' | 'zones'>('overview');
 
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [severityFilter, setSeverityFilter] = useState('all');
-
-  const [updatingId, setUpdatingId] = useState<string | null>(null);
-  const [adminNotes, setAdminNotes] = useState<{ [key: string]: string }>({});
-
+  // 🔐 protect route
   useEffect(() => {
     if (!loading && !user) router.push('/auth/login');
     if (!loading && userProfile?.role !== 'admin') router.push('/');
-  }, [user, userProfile, loading, router]);
+  }, [user, userProfile, loading]);
 
   useEffect(() => {
     if (userProfile?.role === 'admin') loadData();
@@ -51,39 +42,17 @@ export default function AdminDashboard() {
 
     const workerList = usersSnapshot.docs
       .map(doc => ({ id: doc.id, ...doc.data() }))
-      // ✅ FIXED FILTER
       .filter((u:any) => u.role?.toLowerCase().trim() === "worker");
 
     setComplaints(c);
     setWorkers(workerList);
-
     setPageLoading(false);
   };
 
-  const handleStatusUpdate = async (
-    complaintId: string,
-    newStatus: 'open' | 'assigned' | 'resolved'
-  ) => {
+  // ✅ ASSIGN WORKER FUNCTION
+  const handleAssignWorker = async (complaintId: string, workerId: string) => {
 
-    setUpdatingId(complaintId);
-
-    await updateComplaint(complaintId, {
-      status: newStatus,
-      adminNotes: adminNotes[complaintId] || '',
-    });
-
-    setComplaints(prev =>
-      prev.map(c =>
-        c.id === complaintId
-          ? { ...c, status: newStatus }
-          : c
-      )
-    );
-
-    setUpdatingId(null);
-  };
-
-  const handleAssignWorker = async (complaintId:string, workerId:string) => {
+    if (!workerId) return;
 
     await updateComplaint(complaintId, {
       workerId,
@@ -93,224 +62,131 @@ export default function AdminDashboard() {
     loadData();
   };
 
-  if (loading || pageLoading) return <p className="p-10">Loading admin...</p>;
-  if (userProfile?.role !== 'admin') return null;
+  // ✅ RESOLVE FUNCTION
+  const handleResolve = async (id: string) => {
+    await updateComplaint(id, { status: 'resolved' });
+    loadData();
+  };
 
-  const filteredComplaints = complaints.filter(c => {
-
-    const searchMatch =
-      c.title.toLowerCase().includes(search.toLowerCase()) ||
-      c.location.address.toLowerCase().includes(search.toLowerCase());
-
-    const statusMatch =
-      statusFilter === 'all' || c.status === statusFilter;
-
-    const severityMatch =
-      severityFilter === 'all' || c.severity === severityFilter;
-
-    return searchMatch && statusMatch && severityMatch;
-  });
+  if (loading || pageLoading) return <p className="p-10 text-white">Loading admin...</p>;
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-gradient-to-br from-[#0f172a] to-[#020617] text-white">
 
       <Navigation />
 
       <div className="max-w-6xl mx-auto p-6">
 
-        <h1 className="text-3xl font-bold mb-6">
-          BMC Admin Dashboard
+        <h1 className="text-4xl font-bold mb-10 bg-gradient-to-r from-sky-400 to-emerald-400 bg-clip-text text-transparent">
+          Admin Dashboard 🚀
         </h1>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        {/* STATS */}
+        <div className="grid md:grid-cols-4 gap-6 mb-10">
 
-          <Card>
-            <CardContent className="pt-6 text-center">
-              <p className="text-3xl font-bold text-blue-600">{complaints.length}</p>
-              <p className="text-sm text-gray-600">Total Complaints</p>
-            </CardContent>
-          </Card>
+          <div className="p-6 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20">
+            <p>Total</p>
+            <h2 className="text-3xl">{complaints.length}</h2>
+          </div>
 
-          <Card>
-            <CardContent className="pt-6 text-center">
-              <p className="text-3xl font-bold text-red-600">
-                {complaints.filter(c => c.status === 'open').length}
-              </p>
-              <p className="text-sm text-gray-600">Open</p>
-            </CardContent>
-          </Card>
+          <div className="p-6 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20">
+            <p>Open</p>
+            <h2 className="text-3xl text-red-400">
+              {complaints.filter(c => c.status === 'open').length}
+            </h2>
+          </div>
 
-          <Card>
-            <CardContent className="pt-6 text-center">
-              <p className="text-3xl font-bold text-yellow-600">
-                {complaints.filter(c => c.severity === 'high').length}
-              </p>
-              <p className="text-sm text-gray-600">High Severity</p>
-            </CardContent>
-          </Card>
+          <div className="p-6 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20">
+            <p>High</p>
+            <h2 className="text-3xl text-orange-400">
+              {complaints.filter(c => c.severity === 'high').length}
+            </h2>
+          </div>
 
-          <Card>
-            <CardContent className="pt-6 text-center">
-              <p className="text-3xl font-bold text-green-600">
-                {complaints.filter(c => c.status === 'resolved').length}
-              </p>
-              <p className="text-sm text-gray-600">Resolved</p>
-            </CardContent>
-          </Card>
+          <div className="p-6 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20">
+            <p>Resolved</p>
+            <h2 className="text-3xl text-green-400">
+              {complaints.filter(c => c.status === 'resolved').length}
+            </h2>
+          </div>
 
         </div>
 
-        <div className="flex gap-4 mb-6">
-          {['overview', 'complaints', 'zones'].map(tab => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab as any)}
-              className={`px-4 py-2 rounded ${
-                activeTab === tab ? 'bg-blue-600 text-white' : 'bg-gray-200'
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
+        {/* TABS */}
+        <div className="flex gap-4 mb-8">
+          <button onClick={() => setActiveTab('overview')} className="px-4 py-2 bg-sky-500 rounded">overview</button>
+          <button onClick={() => setActiveTab('complaints')} className="px-4 py-2 bg-gray-700 rounded">complaints</button>
+          <button onClick={() => setActiveTab('zones')} className="px-4 py-2 bg-gray-700 rounded">zones</button>
         </div>
 
+        {/* OVERVIEW */}
         {activeTab === 'overview' && (
           <AdminCharts complaints={complaints} />
         )}
 
+        {/* COMPLAINTS */}
         {activeTab === 'complaints' && (
 
-          <div>
+          <div className="space-y-4">
 
-            <div className="grid md:grid-cols-3 gap-4 mb-6">
+            {complaints.map(c => (
 
-              <Input
-                placeholder="Search complaints..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-              />
+              <div key={c.id} className="p-5 rounded-xl bg-white/10 border border-white/20">
 
-              <select
-                className="border rounded p-2"
-                value={statusFilter}
-                onChange={e => setStatusFilter(e.target.value)}
-              >
-                <option value="all">All Status</option>
-                <option value="open">Open</option>
-                <option value="assigned">Assigned</option>
-                <option value="resolved">Resolved</option>
-              </select>
+                <h3 className="font-bold">{c.title}</h3>
+                <p className="text-sm text-gray-400">{c.location.address}</p>
 
-              <select
-                className="border rounded p-2"
-                value={severityFilter}
-                onChange={e => setSeverityFilter(e.target.value)}
-              >
-                <option value="all">All Severity</option>
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-              </select>
+                <div className="flex gap-2 mt-2">
+                  <span className="bg-sky-500/20 px-2 rounded">{c.status}</span>
+                  <span className="bg-red-500/20 px-2 rounded">{c.severity}</span>
+                </div>
 
-            </div>
+                <div className="flex gap-3 mt-4 items-center flex-wrap">
 
-            <div className="space-y-4">
+                  {/* 🔥 ASSIGN DROPDOWN */}
+                  <select
+                    className="bg-black/50 border border-white/20 rounded px-3 py-2"
+                    onChange={(e) => handleAssignWorker(c.id, e.target.value)}
+                  >
+                    <option value="">Assign Worker</option>
 
-              {filteredComplaints.map(c => (
+                    {workers.map(w => (
+                      <option key={w.id} value={w.id}>
+                        {w.displayName || w.email}
+                      </option>
+                    ))}
+                  </select>
 
-                <Card key={c.id}>
-                  <CardContent className="p-4">
+                  {/* ✅ RESOLVE */}
+                  <Button onClick={() => handleResolve(c.id)}>
+                    Resolve
+                  </Button>
 
-                    <h3 className="font-semibold">{c.title}</h3>
+                  {/* 📍 MAP */}
+                  <Button
+                    variant="outline"
+                    onClick={() =>
+                      window.open(
+                        `https://maps.google.com/?q=${c.location.latitude},${c.location.longitude}`
+                      )
+                    }
+                  >
+                    Map
+                  </Button>
 
-                    <p className="text-sm text-gray-600">
-                      {c.location.address}
-                    </p>
+                </div>
 
-                    <div className="flex gap-2 mt-2">
-                      <Badge>{c.status}</Badge>
-                      <Badge>{c.severity}</Badge>
-                    </div>
+              </div>
 
-                    <textarea
-                      className="w-full border rounded p-2 mt-2"
-                      placeholder="Admin notes..."
-                      value={adminNotes[c.id] || ''}
-                      onChange={e =>
-                        setAdminNotes(prev => ({
-                          ...prev,
-                          [c.id]: e.target.value,
-                        }))
-                      }
-                    />
-
-                    <select
-                      className="border p-2 rounded mt-2"
-                      onChange={(e) => handleAssignWorker(c.id, e.target.value)}
-                    >
-                      <option value="">Assign Worker</option>
-
-                      {workers.map(w => (
-                        <option key={w.id} value={w.id}>
-                          {w.name}
-                        </option>
-                      ))}
-
-                    </select>
-
-                    <div className="flex gap-2 mt-3">
-
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={updatingId === c.id}
-                        onClick={() => handleStatusUpdate(c.id, 'assigned')}
-                      >
-                        Assign
-                      </Button>
-
-                      <Button
-                        size="sm"
-                        disabled={updatingId === c.id}
-                        onClick={() => handleStatusUpdate(c.id, 'resolved')}
-                      >
-                        Resolve
-                      </Button>
-
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() =>
-                          window.open(
-                            `https://maps.google.com/?q=${c.location.latitude},${c.location.longitude}`
-                          )
-                        }
-                      >
-                        View Map
-                      </Button>
-
-                    </div>
-
-                  </CardContent>
-                </Card>
-
-              ))}
-
-            </div>
+            ))}
 
           </div>
+
         )}
 
+        {/* ZONES */}
         {activeTab === 'zones' && (
-          <div>
-
-            <h2 className="text-xl font-semibold mb-4">
-              Waste Complaint Heatmap
-            </h2>
-
-            <Heatmap />
-
-          </div>
+          <Heatmap />
         )}
 
       </div>

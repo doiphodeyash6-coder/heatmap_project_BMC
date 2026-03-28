@@ -1,23 +1,64 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 export default function LoginPage() {
 
-  const { login } = useAuth();
+  const { login, loginWithGoogle, userProfile } = useAuth();
   const router = useRouter();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleLogin = async (e: any) => {
+  // 🔐 EMAIL LOGIN (FIXED)
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    await login(email, password);
-    router.push('/');
+
+    try {
+      await login(email, password);
+    } catch (error) {
+      console.error(error);
+      alert("Invalid email or password");
+    }
   };
+
+  // 🔥 GOOGLE LOGIN (FIXED)
+  const handleGoogleLogin = async () => {
+    try {
+      const user = await loginWithGoogle();
+
+      if (!user) {
+        alert("Google login failed");
+        return;
+      }
+
+      // fallback redirect (important)
+      router.push('/');
+
+    } catch (error) {
+      console.error(error);
+      alert("Google login failed");
+    }
+  };
+
+  // 🚀 ROLE BASED REDIRECT (MAIN FIX)
+  useEffect(() => {
+    if (!userProfile) return;
+
+    if (userProfile.role === 'admin') {
+      router.push('/admin');
+    } 
+    else if (userProfile.role === 'worker') {
+      router.push('/worker');
+    } 
+    else {
+      router.push('/');
+    }
+
+  }, [userProfile, router]);
 
   return (
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
@@ -38,7 +79,7 @@ export default function LoginPage() {
       {/* LOGIN CARD */}
       <div className="relative z-10 w-full max-w-md p-8 rounded-2xl 
       bg-white/10 backdrop-blur-xl border border-white/20 
-      shadow-2xl text-white animate-fadeIn">
+      shadow-2xl text-white">
 
         {/* LOGO */}
         <div className="flex items-center gap-3 mb-6">
@@ -61,7 +102,7 @@ export default function LoginPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="w-full p-3 rounded-lg bg-white/10 border border-white/20 
-            focus:outline-none focus:ring-2 focus:ring-sky-500 transition"
+            focus:outline-none focus:ring-2 focus:ring-sky-500"
           />
 
           <input
@@ -70,10 +111,9 @@ export default function LoginPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="w-full p-3 rounded-lg bg-white/10 border border-white/20 
-            focus:outline-none focus:ring-2 focus:ring-emerald-500 transition"
+            focus:outline-none focus:ring-2 focus:ring-emerald-500"
           />
 
-          {/* LOGIN BUTTON */}
           <button
             type="submit"
             className="w-full py-3 rounded-lg bg-gradient-to-r from-sky-500 to-emerald-500 
@@ -88,14 +128,18 @@ export default function LoginPage() {
         <div className="text-center my-4 text-gray-400">OR</div>
 
         {/* GOOGLE BUTTON */}
-        <button className="w-full py-3 rounded-lg bg-white text-black hover:scale-105 transition">
+        <button
+          onClick={handleGoogleLogin}
+          className="w-full py-3 rounded-lg bg-white text-black 
+          hover:scale-105 transition font-semibold"
+        >
           Sign in with Google
         </button>
 
         {/* REGISTER */}
         <p className="text-center mt-4 text-gray-300">
           Don’t have an account?{' '}
-          <Link href="/auth/signup" className="text-sky-400 hover:underline">
+          <Link href="/auth/register" className="text-sky-400 hover:underline">
             Register
           </Link>
         </p>

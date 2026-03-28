@@ -8,6 +8,8 @@ import {
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
+  GoogleAuthProvider,
+  signInWithPopup,
 } from 'firebase/auth';
 
 import { doc, setDoc, getDoc } from 'firebase/firestore';
@@ -26,7 +28,7 @@ interface AuthContextType {
   userProfile: UserProfile | null;
   loading: boolean;
 
-  signup: (
+  register: (
     email: string,
     password: string,
     displayName: string
@@ -36,6 +38,8 @@ interface AuthContextType {
     email: string,
     password: string
   ) => Promise<UserCredential>;
+
+  loginWithGoogle: () => Promise<User | null>;
 
   logout: () => Promise<void>;
 }
@@ -48,27 +52,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // 🔐 Listen to auth state
+  // 🔐 Auth listener
   useEffect(() => {
-
     const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
-
       try {
-
         setUser(authUser);
 
         if (authUser) {
-
           const profileRef = doc(db, 'users', authUser.uid);
           const profileDoc = await getDoc(profileRef);
 
           if (profileDoc.exists()) {
             setUserProfile(profileDoc.data() as UserProfile);
           } else {
-            console.warn('User profile not found');
             setUserProfile(null);
           }
-
         } else {
           setUserProfile(null);
         }
@@ -79,15 +77,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       setLoading(false);
-
     });
 
     return unsubscribe;
-
   }, []);
 
-  // 📝 SIGNUP
-  const signup = async (
+  // 📝 REGISTER (renamed)
+  const register = async (
     email: string,
     password: string,
     displayName: string
@@ -110,7 +106,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     await setDoc(doc(db, 'users', newUser.uid), profile);
-
     setUserProfile(profile);
 
     return userCredential;
@@ -130,23 +125,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const authUser = userCredential.user;
 
-    try {
+    const profileDoc = await getDoc(doc(db, 'users', authUser.uid));
 
-      const profileDoc = await getDoc(doc(db, 'users', authUser.uid));
-
-      if (profileDoc.exists()) {
-        setUserProfile(profileDoc.data() as UserProfile);
-      } else {
-        console.warn('User profile missing');
-        setUserProfile(null);
-      }
-
-    } catch (error) {
-      console.error('Error fetching user profile:', error);
+    if (profileDoc.exists()) {
+      setUserProfile(profileDoc.data() as UserProfile);
+    } else {
       setUserProfile(null);
     }
 
     return userCredential;
+  };
+
+  // 🔥 GOOGLE LOGIN (FIXED + INSIDE COMPONENT)
+  const loginWithGoogle = async (): Promise<User | null> => {
+    try {
+      const provider = new GoogleAuthProvider();
+
+      const result = await signInWithPopup(auth, provider);
+      const authUser = result.user;
+
+      const userRef = doc(db, 'users', authUser.uid);
+      const docSnap = await getDoc(userRef);
+
+      if (!docSnap.exists()) {
+        const newProfile: UserProfile = {
+          uid: authUser.uid,
+          email: authUser.email || '',
+          role: 'citizen',
+          displayName: authUser.displayName || 'User',
+          createdAt: Date.now(),
+        };
+
+        await setDoc(userRef, newProfile);
+        setUserProfile(newProfile);
+
+      } else {
+        setUserProfile(docSnap.data() as UserProfile);
+      }
+
+      return authUser;
+
+    } catch (error) {
+      console.error('Google login error:', error);
+      return null;
+    }
   };
 
   // 🚪 LOGOUT
@@ -162,8 +184,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         userProfile,
         loading,
-        signup,
+        register,
         login,
+        loginWithGoogle,
         logout
       }}
     >
@@ -174,7 +197,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 // 🔑 Hook
 export function useAuth() {
-
   const context = useContext(AuthContext);
 
   if (!context) {

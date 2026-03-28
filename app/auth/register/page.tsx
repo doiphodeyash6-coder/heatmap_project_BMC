@@ -15,7 +15,7 @@ export default function RegisterPage() {
   const [displayName, setDisplayName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const { signup } = useAuth();
+  const { register } = useAuth();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -30,7 +30,7 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      await signup(email, password, displayName);
+      await register(email, password, displayName);
       router.push('/');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed');
