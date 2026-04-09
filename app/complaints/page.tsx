@@ -5,7 +5,6 @@ import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import { getUserComplaints, Complaint } from '@/lib/firebase-service';
 import { Navigation } from '@/components/Navigation';
-import { Card, CardContent } from '@/components/ui/card';
 
 export default function ComplaintsPage() {
 
@@ -15,7 +14,6 @@ export default function ComplaintsPage() {
   const [complaints, setComplaints] = useState<(Complaint & { id: string })[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
 
-  // 🔐 PROTECT ROUTE (NO LOOP)
   useEffect(() => {
 
     if (loading) return;
@@ -27,7 +25,6 @@ export default function ComplaintsPage() {
 
     if (!userProfile) return;
 
-    // ✅ redirect only if wrong role
     if (userProfile.role === "worker") {
       router.replace('/worker');
       return;
@@ -40,7 +37,6 @@ export default function ComplaintsPage() {
 
   }, [user, userProfile, loading]);
 
-  // 📦 LOAD DATA (ONLY ONCE)
   useEffect(() => {
 
     if (!user) return;
@@ -53,71 +49,116 @@ export default function ComplaintsPage() {
 
     loadData();
 
-  }, [user?.uid]); // ✅ IMPORTANT (prevents infinite loop)
+  }, [user?.uid]);
 
-  // ⏳ LOADING UI
+  // 🔥 LOADING UI (DARK)
   if (loading || dataLoading) {
     return (
-      <main className="min-h-screen bg-gray-50">
+      <main className="min-h-screen bg-gradient-to-br from-[#0f172a] to-[#020617] text-white">
         <Navigation />
         <div className="flex items-center justify-center h-[500px]">
-          <p className="text-gray-600">Loading complaints...</p>
+          <div className="text-center">
+            <div className="w-12 h-12 border-4 border-white/20 border-t-sky-400 rounded-full animate-spin mx-auto mb-4"></div>
+            <p className="text-gray-300">Loading complaints...</p>
+          </div>
         </div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="relative min-h-screen overflow-hidden">
 
-      <Navigation />
+      {/* 🌌 BACKGROUND */}
+      <div
+        className="absolute inset-0 bg-cover bg-center"
+        style={{ backgroundImage: "url('/bg.png')" }}
+      />
 
-      <div className="max-w-5xl mx-auto p-6">
+      {/* 🌑 OVERLAY */}
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
 
-        <h1 className="text-3xl font-bold mb-6">My Complaints</h1>
+      <div className="relative z-10">
 
-        {complaints.length === 0 ? (
+        <Navigation />
 
-          <Card>
-            <CardContent className="p-10 text-center">
-              <p className="text-gray-600">No complaints found</p>
-            </CardContent>
-          </Card>
+        <div className="max-w-5xl mx-auto p-6 text-white">
 
-        ) : (
+          {/* TITLE */}
+          <h1 className="text-4xl font-bold mb-8 
+          bg-gradient-to-r from-sky-400 to-emerald-400 bg-clip-text text-transparent">
+            My Complaints 📋
+          </h1>
 
-          <div className="space-y-4">
+          {complaints.length === 0 ? (
 
-            {complaints.map((c) => (
+            <div className="bg-white/10 border border-white/20 backdrop-blur-xl rounded-xl p-10 text-center shadow-xl">
+              <p className="text-gray-300">No complaints found 🚀</p>
+            </div>
 
-              <Card key={c.id}>
-                <CardContent className="p-4">
+          ) : (
 
-                  <h3 className="font-semibold text-lg">
+            <div className="space-y-6">
+
+              {complaints.map((c) => (
+
+                <div
+                  key={c.id}
+                  className="p-6 rounded-2xl bg-white/10 backdrop-blur-xl 
+                  border border-white/20 shadow-xl hover:scale-[1.02] transition"
+                >
+
+                  {/* TITLE */}
+                  <h3 className="text-xl font-bold text-emerald-400 mb-2">
                     {c.title}
                   </h3>
 
-                  <p className="text-gray-600 text-sm mt-1">
+                  {/* DESCRIPTION */}
+                  <p className="text-gray-300 text-sm mb-3">
                     {c.description}
                   </p>
 
-                  <p className="text-sm text-gray-500 mt-2">
+                  {/* LOCATION */}
+                  <p className="text-sm text-gray-400 mb-3">
                     📍 {c.location.address}
                   </p>
 
-                  <div className="mt-2 text-sm">
-                    <span className="mr-3">Status: <b>{c.status}</b></span>
-                    <span>Severity: <b>{c.severity}</b></span>
+                  {/* STATUS + SEVERITY */}
+                  <div className="flex gap-3 flex-wrap">
+
+                    {/* STATUS */}
+                    <span className={`px-3 py-1 rounded-full text-xs border
+                      ${c.status === 'resolved'
+                        ? 'bg-green-500/20 text-green-400 border-green-400/30'
+                        : c.status === 'assigned'
+                        ? 'bg-yellow-500/20 text-yellow-400 border-yellow-400/30'
+                        : 'bg-sky-500/20 text-sky-400 border-sky-400/30'}
+                    `}>
+                      {c.status === 'resolved' ? 'Done ✅' : c.status}
+                    </span>
+
+                    {/* SEVERITY */}
+                    <span className={`px-3 py-1 rounded-full text-xs border
+                      ${c.severity === 'high'
+                        ? 'bg-red-500/20 text-red-400 border-red-400/30'
+                        : c.severity === 'medium'
+                        ? 'bg-yellow-500/20 text-yellow-400 border-yellow-400/30'
+                        : 'bg-green-500/20 text-green-400 border-green-400/30'}
+                    `}>
+                      {c.severity}
+                    </span>
+
                   </div>
 
-                </CardContent>
-              </Card>
+                </div>
 
-            ))}
+              ))}
 
-          </div>
+            </div>
 
-        )}
+          )}
+
+        </div>
 
       </div>
 

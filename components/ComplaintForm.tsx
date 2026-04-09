@@ -6,7 +6,6 @@ import { useAuth } from '@/lib/auth-context';
 import { createComplaint, detectZones } from '@/lib/firebase-service';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useJsApiLoader } from "@react-google-maps/api";
 import { googleMapsLibraries } from "@/lib/googleMapsLoader";
 
@@ -42,7 +41,7 @@ export function ComplaintForm() {
     if (!isLoaded || !mapRef.current || mapInstanceRef.current) return;
 
     const map = new google.maps.Map(mapRef.current, {
-      center: { lat: 19.0760, lng: 72.8777 }, // Mumbai center
+      center: { lat: 19.0760, lng: 72.8777 },
       zoom: 13,
     });
 
@@ -67,21 +66,17 @@ export function ComplaintForm() {
         (results, status) => {
 
           if (status === "OK" && results && results.length > 0) {
-
             setLocation({
               latitude: lat,
               longitude: lng,
               address: results[0].formatted_address
             });
-
           } else {
-
             setLocation({
               latitude: lat,
               longitude: lng,
               address: `${lat}, ${lng}`
             });
-
           }
 
         }
@@ -99,26 +94,15 @@ export function ComplaintForm() {
     e.preventDefault();
     setError('');
 
-    if (!user) {
-      setError('Login required');
-      return;
-    }
-
-    if (!location) {
-      setError('Please select location on map');
-      return;
-    }
-
-    if (!title || !description) {
-      setError('Title and description required');
-      return;
-    }
+    if (!user) return setError('Login required');
+    if (!location) return setError('Please select location on map');
+    if (!title || !description) return setError('Title and description required');
 
     setLoading(true);
 
     try {
 
-      const ward = "K East"; // temporary ward
+      const ward = "K East";
 
       await createComplaint({
         userid: user.uid,
@@ -134,81 +118,107 @@ export function ComplaintForm() {
 
       await detectZones();
 
-    router.push('/admin')
+      router.push('/admin');
 
     } catch (err) {
-
       console.error(err);
       setError('Failed to create complaint');
-
     } finally {
-
       setLoading(false);
-
     }
-
   };
 
   return (
 
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="max-w-4xl mx-auto px-4 py-10">
 
-      <Card>
+      {/* 🔥 DARK GOVT STYLE CARD */}
+      <div className="bg-[#0f172a]/80 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl">
 
-        <CardHeader>
-          <CardTitle>Report Complaint</CardTitle>
-          <CardDescription>Select location on map</CardDescription>
-        </CardHeader>
+        {/* HEADER */}
+        <div className="bg-gradient-to-r from-sky-600 to-emerald-600 text-white px-6 py-4 rounded-t-xl">
+          <h2 className="text-xl font-semibold">
+            Municipal Complaint Registration
+          </h2>
+          <p className="text-sm text-white/80">
+            Fill the form below to report an issue
+          </p>
+        </div>
 
-        <CardContent>
+        {/* FORM */}
+        <div className="p-6">
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
 
             {error && (
-              <div className="text-red-600">
+              <div className="bg-red-500/20 text-red-300 px-4 py-2 rounded border border-red-500/30">
                 {error}
               </div>
             )}
 
-            <Input
-              placeholder="Complaint Title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
+            {/* TITLE */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Complaint Title *
+              </label>
+              <Input
+                placeholder="Enter complaint title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="bg-white/10 border border-white/20 text-white placeholder-gray-400"
+              />
+            </div>
 
-            <textarea
-              placeholder="Complaint Description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full border p-2 rounded"
-            />
+            {/* DESCRIPTION */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Complaint Description *
+              </label>
+              <textarea
+                placeholder="Describe the issue in detail..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="w-full bg-white/10 border border-white/20 text-white placeholder-gray-400 rounded-md p-3"
+                rows={4}
+              />
+            </div>
 
-            <div
-              ref={mapRef}
-              className="w-full h-96 border rounded"
-            />
+            {/* MAP */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Select Location on Map *
+              </label>
 
+              <div
+                ref={mapRef}
+                className="w-full h-96 border border-white/20 rounded-md"
+              />
+            </div>
+
+            {/* LOCATION */}
             {location && (
-              <p className="text-sm text-gray-600">
-                Selected Location: {location.address}
-              </p>
+              <div className="bg-white/10 border border-white/20 px-4 py-2 rounded text-sm text-gray-300">
+                📍 {location.address}
+              </div>
             )}
 
+            {/* BUTTON */}
             <Button
               type="submit"
               disabled={loading || !mapLoaded}
+              className="w-full bg-gradient-to-r from-sky-500 to-emerald-500 
+              hover:scale-105 transition text-white py-3"
             >
               {loading ? 'Submitting...' : 'Submit Complaint'}
             </Button>
 
           </form>
 
-        </CardContent>
+        </div>
 
-      </Card>
+      </div>
 
     </div>
 
   );
-
 }

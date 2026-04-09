@@ -1,178 +1,206 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { getAllComplaints, updateComplaint, Complaint } from '@/lib/firebase-service';
+import { useRouter } from 'next/navigation';
+import { db } from '@/lib/firebase';
+import {
+  collection,
+  getDocs,
+  updateDoc,
+  doc
+} from 'firebase/firestore';
+
 import { Navigation } from '@/components/Navigation';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import AdminCharts from '@/components/admin/AdminCharts';
-import Heatmap from '@/components/Heatmap';
-
-import { collection, getDocs } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 
 export default function AdminDashboard() {
 
   const { user, userProfile, loading } = useAuth();
   const router = useRouter();
 
-  const [complaints, setComplaints] = useState<(Complaint & { id: string })[]>([]);
-  const [pageLoading, setPageLoading] = useState(true);
+  const [complaints, setComplaints] = useState<any[]>([]);
   const [workers, setWorkers] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState('overview');
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'complaints' | 'zones'>('overview');
-
-  // 🔐 protect route
   useEffect(() => {
     if (!loading && !user) router.push('/auth/login');
     if (!loading && userProfile?.role !== 'admin') router.push('/');
   }, [user, userProfile, loading]);
 
   useEffect(() => {
-    if (userProfile?.role === 'admin') loadData();
-  }, [userProfile]);
+    loadData();
+  }, []);
 
   const loadData = async () => {
 
-    const c = await getAllComplaints();
+    const snapshot = await getDocs(collection(db, 'complaints'));
+    const data = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    setComplaints(data);
 
     const usersSnapshot = await getDocs(collection(db, "users"));
 
     const workerList = usersSnapshot.docs
       .map(doc => ({ id: doc.id, ...doc.data() }))
-      .filter((u:any) => u.role?.toLowerCase().trim() === "worker");
+      .filter((u:any) => u.role === "worker");
 
-    setComplaints(c);
     setWorkers(workerList);
-    setPageLoading(false);
   };
 
-  // ✅ ASSIGN WORKER FUNCTION
-  const handleAssignWorker = async (complaintId: string, workerId: string) => {
+  const updateStatus = async (id: string, status: string) => {
+    await updateDoc(doc(db, 'complaints', id), { status });
+    loadData();
+  };
+
+  const assignWorker = async (complaintId: string, workerId: string) => {
 
     if (!workerId) return;
 
-    await updateComplaint(complaintId, {
+    await updateDoc(doc(db, 'complaints', complaintId), {
       workerId,
-      status: "assigned"
+      status: 'assigned'
     });
 
     loadData();
   };
 
-  // ✅ RESOLVE FUNCTION
-  const handleResolve = async (id: string) => {
-    await updateComplaint(id, { status: 'resolved' });
-    loadData();
+  const open = complaints.filter(c => c.status === 'open');
+  const assigned = complaints.filter(c => c.status === 'assigned');
+  const done = complaints.filter(c => c.status === 'resolved');
+  const cancelled = complaints.filter(c => c.status === 'cancelled');
+
+  const getStatusUI = (status: string) => {
+    if (status === 'resolved') return 'Done ✅';
+    return status;
   };
 
-  if (loading || pageLoading) return <p className="p-10 text-white">Loading admin...</p>;
+  const getStatusStyle = (status: string) => {
+    switch (status) {
+      case 'resolved':
+        return 'bg-green-500/20 text-green-400 border-green-400/30';
+      case 'assigned':
+        return 'bg-yellow-500/20 text-yellow-400 border-yellow-400/30';
+      case 'cancelled':
+        return 'bg-red-500/20 text-red-400 border-red-400/30';
+      default:
+        return 'bg-sky-500/20 text-sky-400 border-sky-400/30';
+    }
+  };
+
+  if (loading) return <p>Loading...</p>;
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-[#0f172a] to-[#020617] text-white">
+    <main className="relative min-h-screen overflow-hidden">
 
-      <Navigation />
+      {/* 🌆 MUMBAI BACKGROUND */}
+      <div
+        className="absolute inset-0 bg-cover bg-center"
+        style={{ backgroundImage: "url('/mumbai.jpg')" }}
+      />
 
-      <div className="max-w-6xl mx-auto p-6">
+      {/* DARK OVERLAY */}
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
 
-        <h1 className="text-4xl font-bold mb-10 bg-gradient-to-r from-sky-400 to-emerald-400 bg-clip-text text-transparent">
-          Admin Dashboard 🚀
-        </h1>
+      <div className="relative z-10">
 
-        {/* STATS */}
-        <div className="grid md:grid-cols-4 gap-6 mb-10">
+        <Navigation />
 
-          <div className="p-6 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20">
-            <p>Total</p>
-            <h2 className="text-3xl">{complaints.length}</h2>
+        <div className="max-w-6xl mx-auto p-6 text-white">
+
+          <h1 className="text-4xl font-bold mb-8 
+          bg-gradient-to-r from-sky-400 to-emerald-400 bg-clip-text text-transparent">
+            Admin Dashboard ⚡
+          </h1>
+
+          {/* TABS */}
+          <div className="flex gap-3 mb-6 flex-wrap">
+            {['overview','open','assigned','done','cancelled'].map(tab => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-4 py-2 rounded-full border text-sm transition
+                ${activeTab === tab
+                  ? 'bg-white text-black'
+                  : 'bg-white/10 border-white/20 hover:bg-white/20'}
+                `}
+              >
+                {tab.toUpperCase()}
+              </button>
+            ))}
           </div>
 
-          <div className="p-6 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20">
-            <p>Open</p>
-            <h2 className="text-3xl text-red-400">
-              {complaints.filter(c => c.status === 'open').length}
-            </h2>
-          </div>
+          {/* DATA */}
+          <div className="space-y-6">
 
-          <div className="p-6 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20">
-            <p>High</p>
-            <h2 className="text-3xl text-orange-400">
-              {complaints.filter(c => c.severity === 'high').length}
-            </h2>
-          </div>
+            {(activeTab === 'overview' ? complaints :
+              activeTab === 'open' ? open :
+              activeTab === 'assigned' ? assigned :
+              activeTab === 'done' ? done :
+              cancelled
+            ).map((c) => (
 
-          <div className="p-6 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20">
-            <p>Resolved</p>
-            <h2 className="text-3xl text-green-400">
-              {complaints.filter(c => c.status === 'resolved').length}
-            </h2>
-          </div>
+              <div
+                key={c.id}
+                className="p-6 rounded-2xl bg-white/10 backdrop-blur-xl 
+                border border-white/20 shadow-xl"
+              >
 
-        </div>
+                <h3 className="text-xl font-bold text-emerald-400 mb-2">
+                  {c.title}
+                </h3>
 
-        {/* TABS */}
-        <div className="flex gap-4 mb-8">
-          <button onClick={() => setActiveTab('overview')} className="px-4 py-2 bg-sky-500 rounded">overview</button>
-          <button onClick={() => setActiveTab('complaints')} className="px-4 py-2 bg-gray-700 rounded">complaints</button>
-          <button onClick={() => setActiveTab('zones')} className="px-4 py-2 bg-gray-700 rounded">zones</button>
-        </div>
+                <p className="text-gray-300 text-sm mb-2">
+                  {c.description}
+                </p>
 
-        {/* OVERVIEW */}
-        {activeTab === 'overview' && (
-          <AdminCharts complaints={complaints} />
-        )}
+                <p className="text-gray-400 text-sm mb-3">
+                  📍 {c.location?.address}
+                </p>
 
-        {/* COMPLAINTS */}
-        {activeTab === 'complaints' && (
+                <span className={`px-3 py-1 rounded-full text-xs border mr-3
+                  ${getStatusStyle(c.status)}
+                `}>
+                  {getStatusUI(c.status)}
+                </span>
 
-          <div className="space-y-4">
+                <div className="flex gap-3 mt-4 flex-wrap">
 
-            {complaints.map(c => (
+                  {c.status === 'open' && (
+                    <select
+                      className="bg-black/50 border border-white/20 rounded px-3 py-2 text-sm"
+                      onChange={(e) => assignWorker(c.id, e.target.value)}
+                    >
+                      <option value="">Assign Worker</option>
+                      {workers.map(w => (
+                        <option key={w.id} value={w.id}>
+                          {w.displayName || w.email}
+                        </option>
+                      ))}
+                    </select>
+                  )}
 
-              <div key={c.id} className="p-5 rounded-xl bg-white/10 border border-white/20">
+                  {c.status === 'assigned' && (
+                    <Button
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700"
+                      onClick={() => updateStatus(c.id, 'resolved')}
+                    >
+                      Mark Done ✅
+                    </Button>
+                  )}
 
-                <h3 className="font-bold">{c.title}</h3>
-                <p className="text-sm text-gray-400">{c.location.address}</p>
-
-                <div className="flex gap-2 mt-2">
-                  <span className="bg-sky-500/20 px-2 rounded">{c.status}</span>
-                  <span className="bg-red-500/20 px-2 rounded">{c.severity}</span>
-                </div>
-
-                <div className="flex gap-3 mt-4 items-center flex-wrap">
-
-                  {/* 🔥 ASSIGN DROPDOWN */}
-                  <select
-                    className="bg-black/50 border border-white/20 rounded px-3 py-2"
-                    onChange={(e) => handleAssignWorker(c.id, e.target.value)}
-                  >
-                    <option value="">Assign Worker</option>
-
-                    {workers.map(w => (
-                      <option key={w.id} value={w.id}>
-                        {w.displayName || w.email}
-                      </option>
-                    ))}
-                  </select>
-
-                  {/* ✅ RESOLVE */}
-                  <Button onClick={() => handleResolve(c.id)}>
-                    Resolve
-                  </Button>
-
-                  {/* 📍 MAP */}
-                  <Button
-                    variant="outline"
-                    onClick={() =>
-                      window.open(
-                        `https://maps.google.com/?q=${c.location.latitude},${c.location.longitude}`
-                      )
-                    }
-                  >
-                    Map
-                  </Button>
+                  {c.status !== 'resolved' && c.status !== 'cancelled' && (
+                    <Button
+                      size="sm"
+                      className="bg-red-600 hover:bg-red-700"
+                      onClick={() => updateStatus(c.id, 'cancelled')}
+                    >
+                      Cancel ❌
+                    </Button>
+                  )}
 
                 </div>
 
@@ -182,12 +210,7 @@ export default function AdminDashboard() {
 
           </div>
 
-        )}
-
-        {/* ZONES */}
-        {activeTab === 'zones' && (
-          <Heatmap />
-        )}
+        </div>
 
       </div>
 
