@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import { db } from '@/lib/firebase';
@@ -13,6 +13,7 @@ import {
 
 import { Navigation } from '@/components/Navigation';
 import { Button } from '@/components/ui/button';
+import { useJsApiLoader } from '@react-google-maps/api';
 
 export default function AdminDashboard() {
 
@@ -22,6 +23,14 @@ export default function AdminDashboard() {
   const [complaints, setComplaints] = useState<any[]>([]);
   const [workers, setWorkers] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState('overview');
+
+  const mapRef = useRef<HTMLDivElement>(null);
+  const heatmapRef = useRef<any>(null);
+
+  const { isLoaded } = useJsApiLoader({
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!,
+    libraries: ['visualization']
+  });
 
   useEffect(() => {
     if (!loading && !user) router.push('/auth/login');
@@ -50,13 +59,46 @@ export default function AdminDashboard() {
     setWorkers(workerList);
   };
 
+  // 🔥 FILTER ACTIVE (IMPORTANT)
+  const activeComplaints = complaints.filter(c => c.status !== 'cancelled');
+
+  // 📊 STATS
+  const total = activeComplaints.length;
+  const open = activeComplaints.filter(c => c.status === 'open');
+  const assigned = activeComplaints.filter(c => c.status === 'assigned');
+  const done = activeComplaints.filter(c => c.status === 'resolved');
+  const cancelled = complaints.filter(c => c.status === 'cancelled');
+
+  // 🔥 HEATMAP
+  useEffect(() => {
+
+    if (!isLoaded || !mapRef.current) return;
+
+    const map = new google.maps.Map(mapRef.current, {
+      center: { lat: 19.0760, lng: 72.8777 },
+      zoom: 12,
+      styles: [{ stylers: [{ saturation: -100 }] }]
+    });
+
+    const points = activeComplaints.map(c =>
+      new google.maps.LatLng(c.location.latitude, c.location.longitude)
+    );
+
+    const heatmap = new google.maps.visualization.HeatmapLayer({
+      data: points
+    });
+
+    heatmap.setMap(map);
+    heatmapRef.current = heatmap;
+
+  }, [isLoaded, activeComplaints]);
+
   const updateStatus = async (id: string, status: string) => {
     await updateDoc(doc(db, 'complaints', id), { status });
     loadData();
   };
 
   const assignWorker = async (complaintId: string, workerId: string) => {
-
     if (!workerId) return;
 
     await updateDoc(doc(db, 'complaints', complaintId), {
@@ -66,11 +108,6 @@ export default function AdminDashboard() {
 
     loadData();
   };
-
-  const open = complaints.filter(c => c.status === 'open');
-  const assigned = complaints.filter(c => c.status === 'assigned');
-  const done = complaints.filter(c => c.status === 'resolved');
-  const cancelled = complaints.filter(c => c.status === 'cancelled');
 
   const getStatusUI = (status: string) => {
     if (status === 'resolved') return 'Done ✅';
@@ -95,14 +132,12 @@ export default function AdminDashboard() {
   return (
     <main className="relative min-h-screen overflow-hidden">
 
-      {/* 🌆 MUMBAI BACKGROUND */}
+      {/* BG */}
       <div
         className="absolute inset-0 bg-cover bg-center"
         style={{ backgroundImage: "url('/mumbai.jpg')" }}
       />
-
-      {/* DARK OVERLAY */}
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-black/70" />
 
       <div className="relative z-10">
 
@@ -110,70 +145,77 @@ export default function AdminDashboard() {
 
         <div className="max-w-6xl mx-auto p-6 text-white">
 
-          <h1 className="text-4xl font-bold mb-8 
+          <h1 className="text-4xl font-bold mb-6 
           bg-gradient-to-r from-sky-400 to-emerald-400 bg-clip-text text-transparent">
-            Admin Dashboard ⚡
+            Admin Analytics Dashboard 📊
           </h1>
 
-          {/* TABS */}
-          <div className="flex gap-3 mb-6 flex-wrap">
-            {['overview','open','assigned','done','cancelled'].map(tab => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2 rounded-full border text-sm transition
-                ${activeTab === tab
-                  ? 'bg-white text-black'
-                  : 'bg-white/10 border-white/20 hover:bg-white/20'}
-                `}
-              >
-                {tab.toUpperCase()}
-              </button>
-            ))}
+          {/* 📊 STATS */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+
+            <div className="p-4 bg-white/10 rounded-xl text-center">
+              <p>Total</p>
+              <h2 className="text-2xl font-bold">{total}</h2>
+            </div>
+
+            <div className="p-4 bg-sky-500/20 rounded-xl text-center">
+              <p>Open</p>
+              <h2 className="text-2xl font-bold">{open.length}</h2>
+            </div>
+
+            <div className="p-4 bg-yellow-500/20 rounded-xl text-center">
+              <p>Assigned</p>
+              <h2 className="text-2xl font-bold">{assigned.length}</h2>
+            </div>
+
+            <div className="p-4 bg-green-500/20 rounded-xl text-center">
+              <p>Done</p>
+              <h2 className="text-2xl font-bold">{done.length}</h2>
+            </div>
+
           </div>
 
-          {/* DATA */}
+          {/* 🔥 HEATMAP */}
+          <div className="mb-8 rounded-xl overflow-hidden border border-white/20">
+            <div ref={mapRef} className="w-full h-[400px]" />
+          </div>
+
+          {/* EXISTING CARDS */}
           <div className="space-y-6">
 
-            {(activeTab === 'overview' ? complaints :
-              activeTab === 'open' ? open :
-              activeTab === 'assigned' ? assigned :
-              activeTab === 'done' ? done :
-              cancelled
-            ).map((c) => (
+            {activeComplaints.map((c) => (
 
               <div
                 key={c.id}
-                className="p-6 rounded-2xl bg-white/10 backdrop-blur-xl 
-                border border-white/20 shadow-xl"
+                className="p-6 rounded-2xl bg-white/10 border border-white/20"
               >
 
-                <h3 className="text-xl font-bold text-emerald-400 mb-2">
+                <h3 className="text-xl font-bold text-emerald-400">
                   {c.title}
                 </h3>
 
-                <p className="text-gray-300 text-sm mb-2">
+                <p className="text-gray-300 text-sm">
                   {c.description}
                 </p>
 
-                <p className="text-gray-400 text-sm mb-3">
+                <p className="text-gray-400 text-sm">
                   📍 {c.location?.address}
                 </p>
 
-                <span className={`px-3 py-1 rounded-full text-xs border mr-3
+                <span className={`px-3 py-1 rounded-full text-xs border
                   ${getStatusStyle(c.status)}
                 `}>
                   {getStatusUI(c.status)}
                 </span>
 
-                <div className="flex gap-3 mt-4 flex-wrap">
+                <div className="flex gap-3 mt-3">
 
                   {c.status === 'open' && (
                     <select
-                      className="bg-black/50 border border-white/20 rounded px-3 py-2 text-sm"
                       onChange={(e) => assignWorker(c.id, e.target.value)}
+                      className="bg-black border border-white/20 rounded px-2 py-1"
                     >
-                      <option value="">Assign Worker</option>
+                      <option value="">Assign</option>
                       {workers.map(w => (
                         <option key={w.id} value={w.id}>
                           {w.displayName || w.email}
@@ -183,24 +225,17 @@ export default function AdminDashboard() {
                   )}
 
                   {c.status === 'assigned' && (
-                    <Button
-                      size="sm"
-                      className="bg-green-600 hover:bg-green-700"
-                      onClick={() => updateStatus(c.id, 'resolved')}
-                    >
-                      Mark Done ✅
+                    <Button onClick={() => updateStatus(c.id, 'resolved')}>
+                      Done
                     </Button>
                   )}
 
-                  {c.status !== 'resolved' && c.status !== 'cancelled' && (
-                    <Button
-                      size="sm"
-                      className="bg-red-600 hover:bg-red-700"
-                      onClick={() => updateStatus(c.id, 'cancelled')}
-                    >
-                      Cancel ❌
-                    </Button>
-                  )}
+                  <Button
+                    className="bg-red-600"
+                    onClick={() => updateStatus(c.id, 'cancelled')}
+                  >
+                    Cancel
+                  </Button>
 
                 </div>
 
