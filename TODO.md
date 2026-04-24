@@ -1,10 +1,10 @@
-# Email Notification on Complaint Resolution — Implementation Steps
+# TODO - Analytics Dashboards
 
-- [x] Step 1: Install `nodemailer` + `@types/nodemailer`
-- [x] Step 2: Create Next.js API route `app/api/send-email/route.ts`
-- [x] Step 3: Create client-side helper `lib/email-service.ts`
-- [x] Step 4: Update `app/worker/page.tsx` — send email on `handleComplete`
-- [x] Step 5: Update `app/admin/page.tsx` — send email on `updateStatus` → resolved
-- [x] Step 6: Create `.env.local.example` with SMTP placeholders
-- [x] Step 7: Verify build (`tsc --noEmit` passed with 0 errors)
-
+## Steps
+- [x] 0. Understand codebase and plan
+- [x] 1. Get user approval
+- [x] 2. Create `lib/analytics-utils.ts`
+- [x] 3. Update `components/admin/AdminCharts.tsx`
+- [x] 4. Update `app/admin/page.tsx` with Analytics tab
+- [x] 5. Update `app/worker/page.tsx` with Analytics tab
+- [x] 6. Test & verify build (tsc --noEmit passed with 0 errors)

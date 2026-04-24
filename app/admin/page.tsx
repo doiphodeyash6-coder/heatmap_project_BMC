@@ -19,6 +19,29 @@ import { googleMapsLibraries } from '@/lib/googleMapsLoader';
 import { getUserStats, blacklistUser, unblacklistUser } from '@/lib/firebase-service';
 import { getUserEmail, sendComplaintResolvedEmail } from '@/lib/email-service';
 import { toast } from 'sonner';
+import AdminCharts from '@/components/admin/AdminCharts';
+import {
+  groupByArea,
+  groupByCategory,
+  groupByDate,
+  getWorkerPerformance,
+} from '@/lib/analytics-utils';
+
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+} from 'recharts';
 
 interface UserStatEntry {
   userid: string;
@@ -27,6 +50,8 @@ interface UserStatEntry {
   isBlacklisted: boolean;
   isFlagged: boolean;
 }
+
+const DARK_COLORS = ['#34d399', '#fbbf24', '#f87171', '#60a5fa', '#a78bfa', '#f472b6'];
 
 export default function AdminDashboard() {
 
@@ -115,6 +140,12 @@ export default function AdminDashboard() {
   const done = activeComplaints.filter(c => c.status === 'resolved');
   const fake = complaints.filter(c => c.status === 'fake');
   const cancelled = complaints.filter(c => c.status === 'cancelled');
+
+  // ANALYTICS DATA
+  const areaData = groupByArea(activeComplaints).slice(0, 10);
+  const categoryData = groupByCategory(activeComplaints);
+  const timeData = groupByDate(activeComplaints, 30);
+  const workerPerfData = getWorkerPerformance(activeComplaints, workers);
 
   // HEATMAP
   useEffect(() => {
@@ -288,7 +319,7 @@ export default function AdminDashboard() {
           </h1>
 
           {/* TABS */}
-          <div className="flex gap-4 mb-6">
+          <div className="flex gap-3 mb-6 flex-wrap">
             <button
               onClick={() => setActiveTab('overview')}
               className={`px-4 py-2 rounded-lg font-medium transition ${
@@ -298,6 +329,16 @@ export default function AdminDashboard() {
               }`}
             >
               📋 Complaints
+            </button>
+            <button
+              onClick={() => setActiveTab('analytics')}
+              className={`px-4 py-2 rounded-lg font-medium transition ${
+                activeTab === 'analytics'
+                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-400/30'
+                  : 'bg-white/5 text-gray-300 hover:bg-white/10'
+              }`}
+            >
+              📈 Analytics
             </button>
             <button
               onClick={() => setActiveTab('users')}
@@ -320,6 +361,123 @@ export default function AdminDashboard() {
               🚫 Blacklisted Users ({blacklistedUsers.length})
             </button>
           </div>
+
+          {/* ANALYTICS TAB */}
+          {activeTab === 'analytics' && (
+            <div className="space-y-6">
+
+              {/* Summary Stats */}
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                <div className="p-4 bg-white/10 rounded-xl text-center border border-white/10">
+                  <p className="text-gray-300 text-sm">Total</p>
+                  <h2 className="text-2xl font-bold">{total}</h2>
+                </div>
+                <div className="p-4 bg-sky-500/20 rounded-xl text-center border border-sky-400/20">
+                  <p className="text-gray-300 text-sm">Open</p>
+                  <h2 className="text-2xl font-bold">{open.length}</h2>
+                </div>
+                <div className="p-4 bg-yellow-500/20 rounded-xl text-center border border-yellow-400/20">
+                  <p className="text-gray-300 text-sm">Assigned</p>
+                  <h2 className="text-2xl font-bold">{assigned.length}</h2>
+                </div>
+                <div className="p-4 bg-green-500/20 rounded-xl text-center border border-green-400/20">
+                  <p className="text-gray-300 text-sm">Done</p>
+                  <h2 className="text-2xl font-bold">{done.length}</h2>
+                </div>
+                <div className="p-4 bg-red-500/20 rounded-xl text-center border border-red-400/20">
+                  <p className="text-gray-300 text-sm">Fake</p>
+                  <h2 className="text-2xl font-bold">{fake.length}</h2>
+                </div>
+              </div>
+
+              {/* AdminCharts: Severity + Status */}
+              <AdminCharts complaints={activeComplaints} />
+
+              {/* Complaints by Area */}
+              <div className="bg-white/10 border border-white/20 backdrop-blur-xl rounded-2xl p-5 shadow-xl">
+                <h2 className="font-semibold mb-4 text-white">📍 Complaints by Area (Top 10)</h2>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={areaData} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                    <XAxis type="number" stroke="#94a3b8" tick={{ fill: '#94a3b8' }} />
+                    <YAxis dataKey="name" type="category" width={120} stroke="#94a3b8" tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff' }}
+                      itemStyle={{ color: '#fff' }}
+                    />
+                    <Bar dataKey="value" fill={DARK_COLORS[3]} radius={[0, 6, 6, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Category + Time Trend Row */}
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* Complaints by Category */}
+                <div className="bg-white/10 border border-white/20 backdrop-blur-xl rounded-2xl p-5 shadow-xl">
+                  <h2 className="font-semibold mb-4 text-white">📂 Complaints by Category</h2>
+                  <ResponsiveContainer width="100%" height={260}>
+                    <PieChart>
+                      <Pie data={categoryData} dataKey="value" outerRadius={90} label={({ name, value }) => `${name}: ${value}`}>
+                        {categoryData.map((_, i) => (
+                          <Cell key={i} fill={DARK_COLORS[i % DARK_COLORS.length]} stroke="rgba(0,0,0,0.3)" strokeWidth={2} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff' }}
+                        itemStyle={{ color: '#fff' }}
+                      />
+                      <Legend wrapperStyle={{ color: '#fff' }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Complaints Over Time */}
+                <div className="bg-white/10 border border-white/20 backdrop-blur-xl rounded-2xl p-5 shadow-xl">
+                  <h2 className="font-semibold mb-4 text-white">📅 Complaints Over Time (Last 30 Days)</h2>
+                  <ResponsiveContainer width="100%" height={260}>
+                    <LineChart data={timeData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                      <XAxis dataKey="date" stroke="#94a3b8" tick={{ fill: '#94a3b8', fontSize: 11 }} />
+                      <YAxis stroke="#94a3b8" tick={{ fill: '#94a3b8' }} />
+                      <Tooltip
+                        contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff' }}
+                        itemStyle={{ color: '#fff' }}
+                      />
+                      <Legend wrapperStyle={{ color: '#fff' }} />
+                      <Line type="monotone" dataKey="total" stroke={DARK_COLORS[3]} strokeWidth={2} dot={false} name="Total" />
+                      <Line type="monotone" dataKey="resolved" stroke={DARK_COLORS[0]} strokeWidth={2} dot={false} name="Resolved" />
+                      <Line type="monotone" dataKey="pending" stroke={DARK_COLORS[1]} strokeWidth={2} dot={false} name="Pending" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Worker Performance */}
+              <div className="bg-white/10 border border-white/20 backdrop-blur-xl rounded-2xl p-5 shadow-xl">
+                <h2 className="font-semibold mb-4 text-white">👷 Worker Performance</h2>
+                {workerPerfData.length === 0 ? (
+                  <p className="text-gray-400">No worker data available.</p>
+                ) : (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={workerPerfData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                      <XAxis dataKey="workerName" stroke="#94a3b8" tick={{ fill: '#94a3b8', fontSize: 11 }} angle={-20} textAnchor="end" height={60} />
+                      <YAxis stroke="#94a3b8" tick={{ fill: '#94a3b8' }} />
+                      <Tooltip
+                        contentStyle={{ backgroundColor: 'rgba(15, 23, 42, 0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff' }}
+                        itemStyle={{ color: '#fff' }}
+                      />
+                      <Legend wrapperStyle={{ color: '#fff' }} />
+                      <Bar dataKey="assigned" fill={DARK_COLORS[3]} radius={[4, 4, 0, 0]} name="Assigned" />
+                      <Bar dataKey="resolved" fill={DARK_COLORS[0]} radius={[4, 4, 0, 0]} name="Resolved" />
+                      <Bar dataKey="pending" fill={DARK_COLORS[1]} radius={[4, 4, 0, 0]} name="Pending" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+
+            </div>
+          )}
 
           {/* BLACKLIST TAB */}
           {activeTab === 'blacklist' && (
