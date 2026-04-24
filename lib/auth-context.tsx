@@ -14,6 +14,7 @@ import {
 
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db } from './firebase';
+import { getUserStats } from './firebase-service';
 
 export interface UserProfile {
   uid: string;
@@ -21,6 +22,7 @@ export interface UserProfile {
   role: "citizen" | "admin" | "worker";
   displayName?: string;
   createdAt: number;
+  isBlacklisted?: boolean;
 }
 
 interface AuthContextType {
@@ -63,7 +65,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const profileDoc = await getDoc(profileRef);
 
           if (profileDoc.exists()) {
-            setUserProfile(profileDoc.data() as UserProfile);
+            const profile = profileDoc.data() as UserProfile;
+
+            // 🚫 Check blacklist
+            const stats = await getUserStats(authUser.uid);
+            if (stats.isBlacklisted) {
+              alert("🚫 Your account has been blacklisted due to suspicious activity.");
+              await signOut(auth);
+              setUser(null);
+              setUserProfile(null);
+              setLoading(false);
+              return;
+            }
+
+            setUserProfile(profile);
           } else {
             setUserProfile(null);
           }

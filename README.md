@@ -3,7 +3,7 @@
 A modern web application to report, track, and manage waste-related issues in a city.
 This system connects **citizens, workers, and administrators** to ensure efficient waste management.
 
----
+-----
 
 ## 🚀 Features
 
@@ -38,6 +38,7 @@ This system connects **citizens, workers, and administrators** to ensure efficie
 * **UI:** Custom + ShadCN components
 
 ---
+
 
 ## 📂 Project Structure
 

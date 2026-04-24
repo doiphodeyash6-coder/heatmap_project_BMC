@@ -11,7 +11,9 @@ import {
   orderBy,
   Timestamp,
   QueryConstraint,
-  onSnapshot
+  onSnapshot,
+  increment,
+  setDoc
 } from "firebase/firestore";
 
 import { db } from "./firebase";
@@ -19,6 +21,14 @@ import { db } from "./firebase";
 /* ================================
    INTERFACES
 ================================ */
+
+export interface UserStats {
+  totalComplaints: number;
+  fakeComplaints: number;
+  isBlacklisted: boolean;
+  isFlagged: boolean;
+  lastComplaintAt: Timestamp | null;
+}
 
 export interface Complaint {
   id?: string;
@@ -416,4 +426,122 @@ export async function getWorkerComplaints(workerId: string) {
     id: doc.id,
     ...(doc.data() as Complaint)
   }));
+}
+
+/* ================================
+   USER STATS & BLACKLIST
+================================ */
+
+export async function getUserStats(userid: string): Promise<UserStats> {
+  const ref = doc(db, "userStats", userid);
+  const snap = await getDoc(ref);
+
+  if (!snap.exists()) {
+    const defaultStats: UserStats = {
+      totalComplaints: 0,
+      fakeComplaints: 0,
+      isBlacklisted: false,
+      isFlagged: false,
+      lastComplaintAt: null,
+    };
+    await setDoc(ref, defaultStats);
+    return defaultStats;
+  }
+
+  return snap.data() as UserStats;
+}
+
+export async function incrementUserComplaintCount(userid: string) {
+  const ref = doc(db, "userStats", userid);
+  const snap = await getDoc(ref);
+  const now = Timestamp.now();
+
+  if (!snap.exists()) {
+    await setDoc(ref, {
+      totalComplaints: 1,
+      fakeComplaints: 0,
+      isBlacklisted: false,
+      isFlagged: false,
+      lastComplaintAt: now,
+    });
+  } else {
+    await updateDoc(ref, {
+      totalComplaints: increment(1),
+      lastComplaintAt: now,
+    });
+  }
+}
+
+export async function flagUserAsFake(userid: string) {
+  const ref = doc(db, "userStats", userid);
+  await updateDoc(ref, {
+    isFlagged: true,
+    fakeComplaints: increment(1),
+  });
+}
+
+export async function blacklistUser(userid: string) {
+  const ref = doc(db, "userStats", userid);
+  await updateDoc(ref, {
+    isBlacklisted: true,
+  });
+}
+
+export async function unblacklistUser(userid: string) {
+  const ref = doc(db, "userStats", userid);
+  await updateDoc(ref, {
+    isBlacklisted: false,
+    isFlagged: false,
+    fakeComplaints: 0,
+  });
+}
+
+export async function markComplaintAsFake(complaintId: string, userid: string) {
+  const complaintRef = doc(db, "complaints", complaintId);
+  await updateDoc(complaintRef, {
+    status: "fake",
+    workerVerifiedFake: true,
+    updatedAt: Timestamp.now(),
+  });
+
+  const statsRef = doc(db, "userStats", userid);
+  const statsSnap = await getDoc(statsRef);
+
+  let newStats: UserStats;
+
+  if (!statsSnap.exists()) {
+    newStats = {
+      totalComplaints: 1,
+      fakeComplaints: 1,
+      isBlacklisted: false,
+      isFlagged: true,
+      lastComplaintAt: Timestamp.now(),
+    };
+    await setDoc(statsRef, newStats);
+
+  } else {
+    const current = statsSnap.data() as UserStats;
+    const newFakeCount = (current.fakeComplaints || 0) + 1;
+    const newTotalCount = (current.totalComplaints || 0) + 1;
+    
+    // 🚫 AUTO-BLACKLIST: if user has >= 4 fake complaints
+    const shouldBlacklist = newFakeCount >= 4;
+    
+    newStats = {
+      ...current,
+      fakeComplaints: newFakeCount,
+      totalComplaints: newTotalCount,
+      isFlagged: true,
+      isBlacklisted: shouldBlacklist || current.isBlacklisted,
+    };
+    
+    await updateDoc(statsRef, {
+      fakeComplaints: newFakeCount,
+      totalComplaints: newTotalCount,
+      isFlagged: true,
+      isBlacklisted: shouldBlacklist || current.isBlacklisted,
+    });
+  }
+
+  return newStats;
 }

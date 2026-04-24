@@ -8,6 +8,9 @@ import { db } from "@/lib/firebase";
 
 import { Navigation } from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
+import { markComplaintAsFake } from "@/lib/firebase-service";
+import { getUserEmail, sendComplaintResolvedEmail } from "@/lib/email-service";
+import { toast } from "sonner";
 
 export default function WorkerDashboard() {
 
@@ -44,10 +47,46 @@ export default function WorkerDashboard() {
     setPageLoading(false);
   };
 
-  const handleComplete = async (id: string) => {
+  const handleComplete = async (id: string, complaint: any) => {
     await updateDoc(doc(db, "complaints", id), {
       status: "resolved"
     });
+
+    try {
+      const userEmail = await getUserEmail(complaint.userid);
+      if (userEmail) {
+        const result = await sendComplaintResolvedEmail(userEmail, complaint.title, id);
+        if (result.preview) {
+          toast.warning("Email preview logged to console — SMTP not configured. Check terminal.");
+        } else {
+          toast.success("Resolution email sent to complainant!");
+        }
+      } else {
+        toast.error("No email found for this user.");
+        console.warn("No email found for user:", complaint.userid);
+      }
+    } catch (err: any) {
+      toast.error(`Email failed: ${err.message || "Unknown error"}`);
+      console.error("Failed to send resolution email:", err);
+    }
+
+    loadComplaints();
+  };
+
+  const handleFake = async (id: string, userid: string) => {
+    const confirm = window.confirm("Are you sure you want to mark this complaint as FAKE?");
+    if (!confirm) return;
+
+    const stats = await markComplaintAsFake(id, userid);
+    
+    if (stats.isBlacklisted) {
+      alert(`🚫 Complaint marked as fake.\n\n⚠️ USER AUTO-BLACKLISTED!\nThis user now has ${stats.fakeComplaints} fake complaints out of ${stats.totalComplaints} total. They can no longer log in.`);
+    } else if (stats.fakeComplaints >= 3) {
+      alert(`🚫 Complaint marked as fake.\n\n⚠️ WARNING: This user has ${stats.fakeComplaints} fake complaints out of ${stats.totalComplaints} total. One more fake complaint will auto-blacklist them.`);
+    } else {
+      alert(`🚫 Complaint marked as fake.\n\nUser stats: ${stats.fakeComplaints} fake / ${stats.totalComplaints} total complaints.`);
+    }
+    
     loadComplaints();
   };
 
@@ -159,9 +198,11 @@ export default function WorkerDashboard() {
                 <span className={`px-3 py-1 rounded-full text-xs border
                   ${c.status === 'resolved'
                     ? 'bg-green-500/20 text-green-400 border-green-400/30'
+                    : c.status === 'fake'
+                    ? 'bg-red-500/20 text-red-400 border-red-400/30'
                     : 'bg-sky-500/20 text-sky-400 border-sky-400/30'}
                 `}>
-                  {c.status === 'resolved' ? 'Done ✅' : 'Pending'}
+                  {c.status === 'resolved' ? 'Done ✅' : c.status === 'fake' ? 'Fake 🚫' : 'Pending'}
                 </span>
 
                 {/* ACTIONS */}
@@ -179,15 +220,27 @@ export default function WorkerDashboard() {
                   </Button>
 
                   <Button
-                    disabled={c.status === 'resolved'}
+                    disabled={c.status === 'resolved' || c.status === 'fake'}
                     className={`hover:scale-105 ${
-                      c.status === 'resolved'
+                      c.status === 'resolved' || c.status === 'fake'
                         ? 'bg-gray-600 cursor-not-allowed'
                         : 'bg-gradient-to-r from-emerald-500 to-green-600'
                     }`}
-                    onClick={() => handleComplete(c.id)}
+                    onClick={() => handleComplete(c.id, c)}
                   >
-                    {c.status === 'resolved' ? 'Done ✅' : 'Mark Complete'}
+                    {c.status === 'resolved' ? 'Done ✅' : c.status === 'fake' ? 'Fake 🚫' : 'Mark Complete'}
+                  </Button>
+
+                  <Button
+                    disabled={c.status === 'resolved' || c.status === 'fake'}
+                    className={`hover:scale-105 ${
+                      c.status === 'resolved' || c.status === 'fake'
+                        ? 'bg-gray-600 cursor-not-allowed'
+                        : 'bg-gradient-to-r from-red-500 to-rose-600'
+                    }`}
+                    onClick={() => handleFake(c.id, c.userid)}
+                  >
+                    {c.status === 'fake' ? 'Marked Fake' : 'Mark as Fake'}
                   </Button>
 
                 </div>

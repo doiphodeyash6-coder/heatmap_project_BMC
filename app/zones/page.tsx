@@ -1,6 +1,6 @@
 'use client'
 
-import Heatmap from "@/components/heatmap"
+import Heatmap from "@/components/Heatmap"
 import { Navigation } from "@/components/Navigation"
 
 export default function ZonesPage(){

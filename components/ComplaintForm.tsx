@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { createComplaint, detectZones } from '@/lib/firebase-service';
+import { createComplaint, detectZones, incrementUserComplaintCount } from '@/lib/firebase-service';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useJsApiLoader } from "@react-google-maps/api";
@@ -115,6 +115,9 @@ export function ComplaintForm() {
         status: "open",
         photos: []
       });
+
+      // Increment user complaint count for analytics
+      await incrementUserComplaintCount(user.uid);
 
       await detectZones();
 
