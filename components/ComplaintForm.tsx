@@ -15,6 +15,19 @@ interface LocationData {
   address: string;
 }
 
+const CATEGORY_OPTIONS = [
+  { value: 'trash_overflow', label: 'Trash Overflow' },
+  { value: 'missed_collection', label: 'Missed Collection' },
+  { value: 'improper_disposal', label: 'Improper Disposal' },
+  { value: 'other', label: 'Other' },
+] as const;
+
+const SEVERITY_OPTIONS = [
+  { value: 'low', label: 'Low' },
+  { value: 'medium', label: 'Medium' },
+  { value: 'high', label: 'High' },
+] as const;
+
 export function ComplaintForm() {
 
   const { user } = useAuth();
@@ -26,6 +39,8 @@ export function ComplaintForm() {
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [category, setCategory] = useState<'trash_overflow' | 'missed_collection' | 'improper_disposal' | 'other'>('other');
+  const [severity, setSeverity] = useState<'low' | 'medium' | 'high'>('medium');
   const [location, setLocation] = useState<LocationData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -108,8 +123,8 @@ export function ComplaintForm() {
         userid: user.uid,
         title,
         description,
-        category: "other",
-        severity: "medium",
+        category,
+        severity,
         location,
         ward,
         status: "open",
@@ -135,7 +150,7 @@ export function ComplaintForm() {
 
     <div className="max-w-4xl mx-auto px-4 py-10">
 
-      {/* 🔥 DARK GOVT STYLE CARD */}
+      {/* DARK GOVT STYLE CARD */}
       <div className="bg-[#0f172a]/80 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl">
 
         {/* HEADER */}
@@ -170,6 +185,42 @@ export function ComplaintForm() {
                 onChange={(e) => setTitle(e.target.value)}
                 className="bg-white/10 border border-white/20 text-white placeholder-gray-400"
               />
+            </div>
+
+            {/* CATEGORY */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Category *
+              </label>
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value as any)}
+                className="w-full bg-white/10 border border-white/20 text-white rounded-md px-3 py-2"
+              >
+                {CATEGORY_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value} className="bg-[#0f172a]">
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* SEVERITY */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Severity *
+              </label>
+              <select
+                value={severity}
+                onChange={(e) => setSeverity(e.target.value as any)}
+                className="w-full bg-white/10 border border-white/20 text-white rounded-md px-3 py-2"
+              >
+                {SEVERITY_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value} className="bg-[#0f172a]">
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* DESCRIPTION */}

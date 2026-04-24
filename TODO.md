@@ -7,4 +7,5 @@
 - [x] 3. Update `components/admin/AdminCharts.tsx`
 - [x] 4. Update `app/admin/page.tsx` with Analytics tab
 - [x] 5. Update `app/worker/page.tsx` with Analytics tab
-- [x] 6. Test & verify build (tsc --noEmit passed with 0 errors)
+- [x] 6. Add Category & Severity dropdowns to `components/ComplaintForm.tsx`
+- [x] 7. Test & verify build
